@@ -109,7 +109,7 @@ const GlobeCanvas: React.FC = () => {
     <div className="relative w-screen h-screen overflow-hidden font-sans">
       <div
         ref={mountRef}
-        className="w-full h-full cursor-grab"
+        className="w-full h-full cursor-grab globe-container touch-optimized"
         style={{ userSelect: "none" }}
       />
 

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Sparkles, RefreshCw } from "lucide-react";
+import { Upload, Sparkles, RefreshCw, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -196,12 +196,22 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => (!open ? onClose() : null)}>
-      <DialogContent className="sm:max-w-md bg-white/10 backdrop-blur-xl border border-white/20 text-white">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center">
+      <DialogContent className="sm:max-w-md w-[90vw] max-h-[90vh] overflow-y-auto bg-white/10 backdrop-blur-xl border border-white/20 text-white">
+        <DialogHeader className="relative">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="absolute -top-2 -right-2 h-8 w-8 p-0 text-white/70 hover:text-white hover:bg-white/10 z-10"
+          >
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </Button>
+          <DialogTitle className="text-xl sm:text-2xl font-bold text-center pr-8">
             Join the Waitlist
           </DialogTitle>
-          <DialogDescription className="text-center text-white/70">
+          <DialogDescription className="text-center text-white/70 text-sm sm:text-base">
             Be part of the future of DeFi lending
           </DialogDescription>
         </DialogHeader>
@@ -276,7 +286,7 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
                     <Label className="text-sm text-white/80">
                       Avatar Style
                     </Label>
-                    <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                    <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
                       {Object.keys(AVATAR_STYLES).map((style) => (
                         <button
                           key={style}
@@ -284,7 +294,7 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
                           onClick={() =>
                             handleStyleChange(style as AvatarStyle)
                           }
-                          className={`px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all font-medium flex-shrink-0 ${
+                          className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs whitespace-nowrap transition-all font-medium flex-shrink-0 ${
                             selectedAvatarStyle === style
                               ? "bg-orange-500 text-white shadow-lg"
                               : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
@@ -318,13 +328,13 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
                       </Button>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2 p-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg">
+                    <div className="grid grid-cols-3 gap-2 sm:gap-3 p-2 sm:p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg">
                       {isGeneratingAvatars
                         ? // Loading skeletons
                           Array.from({ length: 6 }).map((_, i) => (
                             <div
                               key={i}
-                              className="w-16 h-16 bg-white/20 rounded-lg animate-pulse"
+                              className="aspect-square bg-white/20 rounded-lg animate-pulse"
                             />
                           ))
                         : avatarOptions.map((seed) => (
@@ -332,7 +342,7 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
                               key={seed}
                               type="button"
                               onClick={() => setSelectedAvatarSeed(seed)}
-                              className={`w-16 h-16 rounded-lg overflow-hidden transition-all hover:scale-105 ${
+                              className={`aspect-square rounded-lg overflow-hidden transition-all hover:scale-105 ${
                                 selectedAvatarSeed === seed
                                   ? "ring-2 ring-orange-500 ring-offset-1 ring-offset-black/20"
                                   : "hover:ring-1 hover:ring-white/30"
@@ -357,37 +367,37 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
                 </TabsContent>
 
                 <TabsContent value="upload" className="space-y-3">
-                  <div className="border-2 border-dashed border-white/30 bg-white/5 backdrop-blur-sm rounded-lg p-6 text-center">
+                  <div className="border-2 border-dashed border-white/30 bg-white/5 backdrop-blur-sm rounded-lg p-4 sm:p-6 text-center">
                     {uploadedImage ? (
                       <div className="space-y-3">
                         <img
                           src={uploadedImage}
                           alt="Uploaded avatar"
-                          className="w-20 h-20 rounded-full mx-auto object-cover border-2 border-orange-500"
+                          className="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto object-cover border-2 border-orange-500"
                         />
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
                           onClick={clearUploadedImage}
-                          className="text-white/70 border-white/30 hover:bg-white/20 hover:text-white transition-all"
+                          className="text-white/70 border-white/30 hover:bg-white/20 hover:text-white transition-all text-xs sm:text-sm"
                         >
                           Remove Image
                         </Button>
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        <Upload className="h-12 w-12 text-white/50 mx-auto" />
+                        <Upload className="h-10 w-10 sm:h-12 sm:w-12 text-white/50 mx-auto" />
                         <div>
                           <Button
                             type="button"
                             variant="outline"
                             onClick={() => fileInputRef.current?.click()}
-                            className="text-white/70 border-white/30 hover:bg-white/20 hover:text-white transition-all"
+                            className="text-white/70 border-white/30 hover:bg-white/20 hover:text-white transition-all text-xs sm:text-sm"
                           >
                             Choose Image
                           </Button>
-                          <p className="text-sm text-white/50 mt-2">
+                          <p className="text-xs sm:text-sm text-white/50 mt-2">
                             PNG, JPG up to 5MB
                           </p>
                         </div>
@@ -409,7 +419,7 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-500/50 text-white font-semibold py-3 backdrop-blur-sm border border-orange-500/50 shadow-lg transition-all"
+              className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-500/50 text-white font-semibold py-2.5 sm:py-3 text-sm sm:text-base backdrop-blur-sm border border-orange-500/50 shadow-lg transition-all"
             >
               {isSubmitting ? "Joining..." : "Join Waitlist"}
             </Button>

@@ -85,6 +85,10 @@ export function useThreeGlobe(
     profileMeshes: [] as THREE.Mesh[],
     renderer: null as THREE.WebGLRenderer | null,
     scene: null as THREE.Scene | null,
+    // Touch/pinch gesture state
+    touches: [] as Touch[],
+    lastPinchDistance: 0,
+    isPinching: false,
   }).current;
 
   // Helper: create circular emoji texture on a mesh
@@ -381,10 +385,30 @@ export function useThreeGlobe(
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
+    const getTouchDistance = (touch1: Touch, touch2: Touch) => {
+      const dx = touch1.clientX - touch2.clientX;
+      const dy = touch1.clientY - touch2.clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
     const handleMouseDown = (event: MouseEvent | TouchEvent) => {
       event.preventDefault();
+
+      if ("touches" in event && event.touches.length > 1) {
+        // Multi-touch (pinch gesture)
+        stateRef.isPinching = true;
+        stateRef.touches = Array.from(event.touches);
+        stateRef.lastPinchDistance = getTouchDistance(
+          event.touches[0],
+          event.touches[1]
+        );
+        stateRef.isAutoRotating = false;
+        return;
+      }
+
       stateRef.isMouseDown = true;
       stateRef.isDragging = false;
+      stateRef.isPinching = false;
       stateRef.mouseDownTime = Date.now();
       const clientX =
         "touches" in event ? event.touches[0].clientX : event.clientX;
@@ -398,6 +422,31 @@ export function useThreeGlobe(
 
     const handleMouseMove = (event: MouseEvent | TouchEvent) => {
       event.preventDefault();
+
+      if (
+        "touches" in event &&
+        event.touches.length > 1 &&
+        stateRef.isPinching
+      ) {
+        // Handle pinch-to-zoom
+        const currentDistance = getTouchDistance(
+          event.touches[0],
+          event.touches[1]
+        );
+        const distanceChange = currentDistance - stateRef.lastPinchDistance;
+
+        if (Math.abs(distanceChange) > 2) {
+          // Threshold to prevent jitter
+          const zoomFactor = distanceChange > 0 ? 0.98 : 1.02;
+          if (stateRef.camera) {
+            stateRef.camera.position.multiplyScalar(zoomFactor);
+            stateRef.camera.position.clampLength(200, 2000); // Extended range for mobile
+          }
+          stateRef.lastPinchDistance = currentDistance;
+        }
+        return;
+      }
+
       const clientX =
         "touches" in event ? event.touches[0].clientX : event.clientX;
       const clientY =
@@ -405,7 +454,12 @@ export function useThreeGlobe(
       const rect = renderer.domElement.getBoundingClientRect();
       mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-      if (stateRef.isMouseDown && !stateRef.isDragging) {
+
+      if (
+        stateRef.isMouseDown &&
+        !stateRef.isDragging &&
+        !stateRef.isPinching
+      ) {
         const deltaX = clientX - stateRef.startMouseX;
         const deltaY = clientY - stateRef.startMouseY;
         const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
@@ -414,20 +468,36 @@ export function useThreeGlobe(
           stateRef.isAutoRotating = false;
         }
       }
-      if (stateRef.isDragging) {
+
+      if (stateRef.isDragging && !stateRef.isPinching) {
         const deltaX = clientX - stateRef.mouseX;
         const deltaY = clientY - stateRef.mouseY;
-        stateRef.targetRotationY += deltaX * 0.005;
-        stateRef.targetRotationX += deltaY * 0.005;
+        // Increased sensitivity for mobile
+        const sensitivity = "touches" in event ? 0.008 : 0.005;
+        stateRef.targetRotationY += deltaX * sensitivity;
+        stateRef.targetRotationX += deltaY * sensitivity;
         stateRef.mouseX = clientX;
         stateRef.mouseY = clientY;
-      } else if (!stateRef.isMouseDown) {
+      } else if (!stateRef.isMouseDown && !stateRef.isPinching) {
         handleHover();
       }
     };
 
     const handleMouseUp = (event: MouseEvent | TouchEvent) => {
       event.preventDefault();
+
+      if ("touches" in event && stateRef.isPinching) {
+        // End pinch gesture
+        if (event.touches.length < 2) {
+          stateRef.isPinching = false;
+          stateRef.touches = [];
+          setTimeout(() => {
+            stateRef.isAutoRotating = true;
+          }, 1000);
+        }
+        return;
+      }
+
       const clientX =
         "changedTouches" in event
           ? event.changedTouches[0].clientX
@@ -441,7 +511,8 @@ export function useThreeGlobe(
       const deltaY = clientY - stateRef.startMouseY;
       const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
       const wasClick = timeHeld < 300 && distance < 15;
-      if (wasClick && stateRef.isMouseDown) {
+
+      if (wasClick && stateRef.isMouseDown && !stateRef.isPinching) {
         handleMouseClick();
         if (!stateRef.isDragging) stateRef.isAutoRotating = true;
       } else if (stateRef.isDragging) {
@@ -449,6 +520,7 @@ export function useThreeGlobe(
           stateRef.isAutoRotating = true;
         }, 2000);
       }
+
       stateRef.isMouseDown = false;
       stateRef.isDragging = false;
     };
@@ -477,9 +549,13 @@ export function useThreeGlobe(
     const handleWheel = (event: WheelEvent) => {
       event.preventDefault();
       if (!stateRef.camera) return;
-      const delta = event.deltaY > 0 ? 1.1 : 0.9;
+
+      // Adjust zoom sensitivity based on device pixel ratio (mobile vs desktop)
+      const sensitivity = window.devicePixelRatio > 1 ? 1.05 : 1.1;
+      const delta = event.deltaY > 0 ? sensitivity : 1 / sensitivity;
+
       stateRef.camera.position.multiplyScalar(delta);
-      stateRef.camera.position.clampLength(300, 1500);
+      stateRef.camera.position.clampLength(200, 2000); // Extended range for better mobile experience
     };
 
     const handleResize = () => {

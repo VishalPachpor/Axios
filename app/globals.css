@@ -12,11 +12,35 @@ html {
 
 body {
   overflow-x: hidden;
+  /* Mobile optimizations */
+  -webkit-overflow-scrolling: touch; /* iOS momentum scrolling */
+  overscroll-behavior: none; /* Prevent bounce/overscroll effects */
 }
 
 /* Ensure smooth scrolling works with existing scroll containers */
 .scroll-smooth {
   scroll-behavior: smooth;
+}
+
+/* Mobile touch optimization utilities */
+.touch-optimized {
+  touch-action: manipulation; /* Faster click response on mobile */
+  -webkit-tap-highlight-color: transparent; /* Remove tap highlight */
+}
+
+/* Prevent scrolling on globe canvas when interacting */
+.globe-container {
+  touch-action: none; /* Prevent default touch actions on globe */
+}
+
+/* Hide horizontal scrollbar on mobile where not needed */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
 }
 
 /* Custom scrollbar styles for better UX */
