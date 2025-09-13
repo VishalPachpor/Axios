@@ -8,6 +8,7 @@ import {
 } from "@fuels/react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { resolveEnsName } from "@/lib/ens";
 
 export default function WalletAction() {
   const { connect, isConnecting, error, isError } = useConnectUI();
@@ -23,6 +24,24 @@ export default function WalletAction() {
     }),
     [isConnected, wallet]
   );
+
+  const [ensName, setEnsName] = useState<string | null>(null);
+
+  // Try to resolve ENS name when address changes (best-effort)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!connectionState.address) {
+        setEnsName(null);
+        return;
+      }
+      const name = await resolveEnsName(connectionState.address);
+      if (!cancelled) setEnsName(name);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [connectionState.address]);
 
   // Handle connection errors
   useEffect(() => {
@@ -67,11 +86,13 @@ export default function WalletAction() {
     );
   }
 
+  const label = connectionState.isConnected
+    ? ensName || shortenAddress(connectionState.address)
+    : "Connect wallet";
+
   return (
     <Button type="button" onClick={handleClick} className="h-10 px-4">
-      {connectionState.isConnected && connectionState.address
-        ? shortenAddress(connectionState.address)
-        : "Connect wallet"}
+      {label}
     </Button>
   );
 }

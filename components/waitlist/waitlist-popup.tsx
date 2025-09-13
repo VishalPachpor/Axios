@@ -227,7 +227,7 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
               <Input
                 id="wallet"
                 type="text"
-                placeholder="0x..."
+                placeholder="0x... or 0xvitalik.eth"
                 value={walletAddress}
                 onChange={(e) => setWalletAddress(e.target.value)}
                 required

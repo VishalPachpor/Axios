@@ -147,49 +147,48 @@ export default function WaitlistSection() {
           <GlobeCanvas />
         </div>
 
-        {/* Gradient Overlay (let pointer events pass through) */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background/20 via-background/10 to-transparent z-10 pointer-events-none" />
-
-        {/* Logo - Top Left */}
-        <div className="absolute top-4 left-4 md:top-6 md:left-6 z-20">
-          <button
-            onClick={handleLogoClick}
-            className="flex items-center space-x-1 md:space-x-2 hover:opacity-80 transition-opacity duration-200 cursor-pointer group"
-            title="Go to Home"
-          >
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 173 173"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-6 h-6 md:w-8 md:h-8 group-hover:scale-105 transition-transform duration-200"
+        {/* Logo - Top Left (aligned with header container) */}
+        <div className="absolute top-4 inset-x-0 md:top-6 z-20">
+          <div className="max-w-7xl mx-auto px-6">
+            <button
+              onClick={handleLogoClick}
+              className="flex items-center space-x-3 hover:opacity-80 transition-opacity duration-200 cursor-pointer group"
+              title="Go to Home"
             >
-              <path
-                d="M87.8752 75.3753L50.8259 38.326L39.6267 49.5252L76.4744 86.3729L39.6267 123.221L49.9753 133.569L87.8752 95.6693L125.775 133.569L136.124 123.221L99.276 86.3729L136.124 49.5252L124.924 38.326L87.8752 75.3753Z"
-                fill="#F97316"
-              />
-              <path
-                d="M59.096 29.3139L87.8752 0.534729L116.654 29.3139L87.8752 58.0931L59.096 29.3139Z"
-                fill="#F97316"
-              />
-              <path
-                d="M115.292 86.5213L144.072 57.7421L172.851 86.5213L144.072 115.3L115.292 86.5213Z"
-                fill="#F97316"
-              />
-              <path
-                d="M0.467819 86.5213L29.247 57.7421L58.0262 86.5213L29.247 115.3L0.467819 86.5213Z"
-                fill="#F97316"
-              />
-              <path
-                d="M59.096 143.506L68.6725 133.929L88.3285 152.348L97.7593 142.694L88.1019 133.15L87.8752 114.727L116.654 143.506L87.8752 172.285L59.096 143.506Z"
-                fill="#F97316"
-              />
-            </svg>
-            <span className="text-white text-lg md:text-xl font-semibold tracking-wide group-hover:text-orange-200 transition-colors duration-200">
-              AXIOS
-            </span>
-          </button>
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 173 173"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-8 h-8 group-hover:scale-105 transition-transform duration-200"
+              >
+                <path
+                  d="M87.8752 75.3753L50.8259 38.326L39.6267 49.5252L76.4744 86.3729L39.6267 123.221L49.9753 133.569L87.8752 95.6693L125.775 133.569L136.124 123.221L99.276 86.3729L136.124 49.5252L124.924 38.326L87.8752 75.3753Z"
+                  fill="#F97316"
+                />
+                <path
+                  d="M59.096 29.3139L87.8752 0.534729L116.654 29.3139L87.8752 58.0931L59.096 29.3139Z"
+                  fill="#F97316"
+                />
+                <path
+                  d="M115.292 86.5213L144.072 57.7421L172.851 86.5213L144.072 115.3L115.292 86.5213Z"
+                  fill="#F97316"
+                />
+                <path
+                  d="M0.467819 86.5213L29.247 57.7421L58.0262 86.5213L29.247 115.3L0.467819 86.5213Z"
+                  fill="#F97316"
+                />
+                <path
+                  d="M59.096 143.506L68.6725 133.929L88.3285 152.348L97.7593 142.694L88.1019 133.15L87.8752 114.727L116.654 143.506L87.8752 172.285L59.096 143.506Z"
+                  fill="#F97316"
+                />
+              </svg>
+              <span className="text-white text-xl font-light tracking-wide transition-colors duration-200">
+                AXIOS
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Music Control Button - Top Right */}

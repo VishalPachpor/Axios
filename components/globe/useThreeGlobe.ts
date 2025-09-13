@@ -123,6 +123,9 @@ export function useThreeGlobe(
       mesh.material = new THREE.MeshBasicMaterial({
         map: texture,
         transparent: true,
+        opacity: 1.0,
+        alphaTest: 0.5,
+        depthWrite: true,
         side: THREE.DoubleSide,
       });
     }
@@ -134,6 +137,15 @@ export function useThreeGlobe(
         (mesh) => mesh.userData.id === profileId
       );
       if (!targetMesh) return;
+      // Remove existing ring if present
+      const existingRing = targetMesh.getObjectByName(
+        "pfp-ring"
+      ) as THREE.Mesh | null;
+      if (existingRing) {
+        targetMesh.remove(existingRing);
+        existingRing.geometry.dispose();
+        (existingRing.material as THREE.Material).dispose();
+      }
       const originalProfile = profileData.find((p) => p.id === profileId);
       if (!originalProfile) return;
       const oldMaterial = targetMesh.material as THREE.MeshBasicMaterial;
@@ -141,7 +153,8 @@ export function useThreeGlobe(
       targetMesh.material = new THREE.MeshBasicMaterial({
         color: originalProfile.color,
         transparent: true,
-        opacity: 0.9,
+        opacity: 1.0,
+        depthWrite: true,
         side: THREE.DoubleSide,
       });
       targetMesh.userData = { ...originalProfile };
@@ -178,8 +191,36 @@ export function useThreeGlobe(
           targetMesh.material = new THREE.MeshBasicMaterial({
             map: texture,
             transparent: true,
+            opacity: 1.0,
+            alphaTest: 0.5,
+            depthWrite: true,
             side: THREE.DoubleSide,
           });
+
+          // Add a subtle ring around the avatar for emphasis
+          const existingRing = targetMesh.getObjectByName(
+            "pfp-ring"
+          ) as THREE.Mesh | null;
+          if (existingRing) {
+            targetMesh.remove(existingRing);
+            existingRing.geometry.dispose();
+            (existingRing.material as THREE.Material).dispose();
+          }
+          const ringGeometry = new THREE.RingGeometry(20.5, 22, 64);
+          const ringMaterial = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.6,
+            side: THREE.DoubleSide,
+            polygonOffset: true,
+            polygonOffsetFactor: -2,
+            polygonOffsetUnits: -2,
+            depthWrite: true,
+          });
+          const ringMesh = new THREE.Mesh(ringGeometry, ringMaterial);
+          ringMesh.name = "pfp-ring";
+          ringMesh.renderOrder = 2;
+          targetMesh.add(ringMesh);
         }
       };
 
@@ -242,7 +283,11 @@ export function useThreeGlobe(
     stateRef.camera = camera;
 
     setLoadingProgress(40);
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: true,
+      premultipliedAlpha: false,
+    });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor(0x000000, 0);
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -264,7 +309,8 @@ export function useThreeGlobe(
       const material = new THREE.MeshBasicMaterial({
         color: profile.color,
         transparent: true,
-        opacity: 0.9,
+        opacity: 1.0,
+        depthWrite: true,
         side: THREE.DoubleSide,
       });
       const profileMesh = new THREE.Mesh(geometry, material);
