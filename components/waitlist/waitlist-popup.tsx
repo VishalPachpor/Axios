@@ -61,6 +61,16 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
     useState<AvatarStyle>("adventurer");
   const [isGeneratingAvatars, setIsGeneratingAvatars] = useState(false);
 
+  // Disable submit until all required inputs are valid
+  const canSubmit = (() => {
+    const nameOk = name.trim().length > 0;
+    const walletOk = /^0x[a-fA-F0-9]{40}$/.test(walletAddress.trim());
+    const avatarOk =
+      (activeTab === "anime" && !!selectedAvatarSeed) ||
+      (activeTab === "upload" && !!uploadedImage);
+    return nameOk && walletOk && avatarOk;
+  })();
+
   // Generate avatar options when anime tab is first accessed
   useEffect(() => {
     if (isOpen && avatarOptions.length === 0) {
@@ -196,7 +206,7 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => (!open ? onClose() : null)}>
-      <DialogContent className="sm:max-w-md w-[90vw] max-h-[90vh] overflow-y-auto bg-white/10 backdrop-blur-xl border border-white/20 text-white [&>button]:text-white/70 [&>button]:hover:text-white [&>button]:hover:bg-white/10">
+      <DialogContent className="sm:max-w-md w-[90vw] max-h-[90vh] sm:max-h-[85vh] overflow-hidden bg-white/10 backdrop-blur-xl border border-white/20 text-white rounded-lg sm:rounded-xl [&>button]:text-white/70 [&>button]:hover:text-white [&>button]:hover:bg-white/10">
         <DialogHeader>
           <DialogTitle className="text-xl sm:text-2xl font-bold text-center">
             Join the Waitlist
@@ -206,8 +216,8 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-3 sm:space-y-4 overflow-hidden smooth-scroll scrollbar-hide">
+          <form onSubmit={handleSubmit} className="space-y-2 sm:space-y-3">
             {/* Name Field */}
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
@@ -217,6 +227,7 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
                 placeholder="Enter your name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                required
                 className={`bg-white/10 border-white/20 text-white placeholder-white/50 backdrop-blur-sm focus:border-orange-500 focus:bg-white/20 transition-all ${
                   errors.name ? "border-red-400" : ""
                 }`}
@@ -235,6 +246,8 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
                 placeholder="0x..."
                 value={walletAddress}
                 onChange={(e) => setWalletAddress(e.target.value)}
+                required
+                pattern="^0x[a-fA-F0-9]{40}$"
                 className={`bg-white/10 border-white/20 text-white placeholder-white/50 backdrop-blur-sm focus:border-orange-500 focus:bg-white/20 transition-all font-mono text-sm ${
                   errors.wallet ? "border-red-400" : ""
                 }`}
@@ -270,13 +283,13 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="anime" className="space-y-3">
+                <TabsContent value="anime" className="space-y-1.5">
                   {/* Style Selection */}
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <Label className="text-sm text-white/80">
                       Avatar Style
                     </Label>
-                    <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
+                    <div className="flex gap-1 overflow-x-auto scrollbar-hide pb-0.5">
                       {Object.keys(AVATAR_STYLES).map((style) => (
                         <button
                           key={style}
@@ -284,7 +297,7 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
                           onClick={() =>
                             handleStyleChange(style as AvatarStyle)
                           }
-                          className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs whitespace-nowrap transition-all font-medium flex-shrink-0 ${
+                          className={`px-2 py-0.5 sm:py-1 rounded-lg text-xs whitespace-nowrap transition-all font-medium flex-shrink-0 ${
                             selectedAvatarStyle === style
                               ? "bg-orange-500 text-white shadow-lg"
                               : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
@@ -297,7 +310,7 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
                   </div>
 
                   {/* Avatar Options Grid */}
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <div className="flex items-center justify-between">
                       <Label className="text-sm text-white/80">
                         Choose Avatar
@@ -318,13 +331,13 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
                       </Button>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2 sm:gap-3 p-2 sm:p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg">
+                    <div className="grid grid-cols-3 gap-2 p-2 place-items-center bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg">
                       {isGeneratingAvatars
                         ? // Loading skeletons
                           Array.from({ length: 6 }).map((_, i) => (
                             <div
                               key={i}
-                              className="aspect-square bg-white/20 rounded-lg animate-pulse"
+                              className="w-16 h-16 bg-white/20 rounded-lg animate-pulse"
                             />
                           ))
                         : avatarOptions.map((seed) => (
@@ -332,7 +345,7 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
                               key={seed}
                               type="button"
                               onClick={() => setSelectedAvatarSeed(seed)}
-                              className={`aspect-square rounded-lg overflow-hidden transition-all hover:scale-105 ${
+                              className={`w-16 h-16 rounded-lg overflow-hidden transition-all hover:scale-105 ${
                                 selectedAvatarSeed === seed
                                   ? "ring-2 ring-orange-500 ring-offset-1 ring-offset-black/20"
                                   : "hover:ring-1 hover:ring-white/30"
@@ -356,14 +369,14 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
                   </div>
                 </TabsContent>
 
-                <TabsContent value="upload" className="space-y-3">
-                  <div className="border-2 border-dashed border-white/30 bg-white/5 backdrop-blur-sm rounded-lg p-4 sm:p-6 text-center">
+                <TabsContent value="upload" className="space-y-1.5">
+                  <div className="border-2 border-dashed border-white/30 bg-white/5 backdrop-blur-sm rounded-lg p-2 sm:p-3 text-center">
                     {uploadedImage ? (
-                      <div className="space-y-3">
+                      <div className="space-y-1.5">
                         <img
                           src={uploadedImage}
                           alt="Uploaded avatar"
-                          className="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto object-cover border-2 border-orange-500"
+                          className="w-12 h-12 sm:w-14 sm:h-14 rounded-full mx-auto object-cover border-2 border-orange-500"
                         />
                         <Button
                           type="button"
@@ -376,8 +389,8 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
                         </Button>
                       </div>
                     ) : (
-                      <div className="space-y-3">
-                        <Upload className="h-10 w-10 sm:h-12 sm:w-12 text-white/50 mx-auto" />
+                      <div className="space-y-1.5">
+                        <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-white/50 mx-auto" />
                         <div>
                           <Button
                             type="button"
@@ -387,7 +400,7 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
                           >
                             Choose Image
                           </Button>
-                          <p className="text-xs sm:text-sm text-white/50 mt-2">
+                          <p className="text-xs sm:text-sm text-white/50 mt-0.5">
                             PNG, JPG up to 5MB
                           </p>
                         </div>
@@ -408,8 +421,8 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
             {/* Submit Button */}
             <Button
               type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-500/50 text-white font-semibold py-2.5 sm:py-3 text-sm sm:text-base backdrop-blur-sm border border-orange-500/50 shadow-lg transition-all"
+              disabled={isSubmitting || !canSubmit}
+              className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-500/50 text-white font-semibold py-1.5 sm:py-2 text-sm sm:text-base backdrop-blur-sm border border-orange-500/50 shadow-lg transition-all"
             >
               {isSubmitting ? "Joining..." : "Join Waitlist"}
             </Button>

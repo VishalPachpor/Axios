@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import GlobeCanvas from "@/components/globe/GlobeCanvas";
 
 const MUSIC_PREF_KEY = "waitlist_music_enabled";
@@ -9,6 +10,7 @@ export default function WaitlistSection() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const router = useRouter();
 
   // Initialize audio element and events with auto-play on first visit
   useEffect(() => {
@@ -120,6 +122,10 @@ export default function WaitlistSection() {
     }
   };
 
+  const handleLogoClick = () => {
+    router.push("/");
+  };
+
   return (
     <div
       id="waitlist-section"
@@ -145,15 +151,19 @@ export default function WaitlistSection() {
         <div className="absolute inset-0 bg-gradient-to-t from-background/20 via-background/10 to-transparent z-10 pointer-events-none" />
 
         {/* Logo - Top Left */}
-        <div className="absolute top-4 left-4 md:top-6 md:left-6 z-20 pointer-events-none">
-          <div className="flex items-center space-x-1 md:space-x-2">
+        <div className="absolute top-4 left-4 md:top-6 md:left-6 z-20">
+          <button
+            onClick={handleLogoClick}
+            className="flex items-center space-x-1 md:space-x-2 hover:opacity-80 transition-opacity duration-200 cursor-pointer group"
+            title="Go to Home"
+          >
             <svg
               width="32"
               height="32"
               viewBox="0 0 173 173"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
-              className="w-6 h-6 md:w-8 md:h-8"
+              className="w-6 h-6 md:w-8 md:h-8 group-hover:scale-105 transition-transform duration-200"
             >
               <path
                 d="M87.8752 75.3753L50.8259 38.326L39.6267 49.5252L76.4744 86.3729L39.6267 123.221L49.9753 133.569L87.8752 95.6693L125.775 133.569L136.124 123.221L99.276 86.3729L136.124 49.5252L124.924 38.326L87.8752 75.3753Z"
@@ -176,10 +186,10 @@ export default function WaitlistSection() {
                 fill="#F97316"
               />
             </svg>
-            <span className="text-white text-lg md:text-xl font-semibold tracking-wide">
+            <span className="text-white text-lg md:text-xl font-semibold tracking-wide group-hover:text-orange-200 transition-colors duration-200">
               AXIOS
             </span>
-          </div>
+          </button>
         </div>
 
         {/* Music Control Button - Top Right */}

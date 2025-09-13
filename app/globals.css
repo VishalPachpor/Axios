@@ -43,6 +43,22 @@ body {
   display: none; /* Chrome, Safari and Opera */
 }
 
+/* Modal smooth scrolling */
+.smooth-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide all scrollbars in modal */
+.smooth-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.smooth-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Custom scrollbar styles for better UX */
 .custom-scrollbar::-webkit-scrollbar {
   width: 8px;
