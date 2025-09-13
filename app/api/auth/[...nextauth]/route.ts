@@ -15,10 +15,13 @@ export const authOptions: NextAuthOptions = {
       },
       profile(profile) {
         return {
-          id: profile.data.id,
-          name: profile.data.name,
-          email: profile.data.username + "@twitter.local", // Twitter doesn't provide email in v2
-          image: profile.data.profile_image_url?.replace("_normal", ""), // Get larger image
+          id: (profile as any).data?.id,
+          name: (profile as any).data?.name,
+          email: ((profile as any).data?.username || "user") + "@twitter.local", // Twitter doesn't provide email in v2
+          image: (profile as any).data?.profile_image_url?.replace(
+            "_normal",
+            ""
+          ), // Get larger image
         };
       },
     }),

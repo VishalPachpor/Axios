@@ -4,8 +4,9 @@ import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Sparkles, RefreshCw, X } from "lucide-react";
+import { X } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/use-auth";
 import {
   Dialog,
   DialogContent,
@@ -13,14 +14,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  generateAvatarOptions,
-  generateAvatarUrl,
-  AVATAR_STYLES,
-  AvatarStyle,
-  getRandomBackground,
-  getStyleDisplayName,
-} from "@/lib/avatar-generator";
+// Avatar is sourced from Twitter profile after sign-in
 
 interface WaitlistFormData {
   name: string;
@@ -47,63 +41,49 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
   const [name, setName] = useState("");
   const [walletAddress, setWalletAddress] = useState("");
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"upload" | "anime">("anime");
   const [errors, setErrors] = useState<{ name?: string; wallet?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Anime avatar states
-  const [avatarOptions, setAvatarOptions] = useState<string[]>([]);
-  const [selectedAvatarSeed, setSelectedAvatarSeed] = useState<string | null>(
-    null
-  );
-  const [selectedAvatarStyle, setSelectedAvatarStyle] =
-    useState<AvatarStyle>("adventurer");
-  const [isGeneratingAvatars, setIsGeneratingAvatars] = useState(false);
+  const {
+    isAuthenticated,
+    isLoading: isAuthLoading,
+    user,
+    username,
+    login,
+  } = useAuth();
+  const [prefilledFromTwitter, setPrefilledFromTwitter] = useState(false);
 
   // Disable submit until all required inputs are valid
   const canSubmit = (() => {
     const nameOk = name.trim().length > 0;
     const walletOk = /^0x[a-fA-F0-9]{40}$/.test(walletAddress.trim());
-    const avatarOk =
-      (activeTab === "anime" && !!selectedAvatarSeed) ||
-      (activeTab === "upload" && !!uploadedImage);
+    const avatarOk = !!uploadedImage; // Require Twitter avatar
     return nameOk && walletOk && avatarOk;
   })();
 
-  // Generate avatar options when anime tab is first accessed
+  // Remove random avatar generation - only Twitter avatar is used
+
+  // If authenticated, prefill name and avatar from Twitter once per open
   useEffect(() => {
-    if (isOpen && avatarOptions.length === 0) {
-      generateNewAvatarOptions();
+    if (!isOpen) return;
+    if (isAuthenticated && user && !prefilledFromTwitter) {
+      const handle = username ? `@${username}` : user.name || "";
+      if (!name) setName(handle);
+      if (user.image) setUploadedImage(user.image);
+      setPrefilledFromTwitter(true);
     }
-  }, [isOpen]);
+  }, [isOpen, isAuthenticated, user, username]);
 
-  const generateNewAvatarOptions = async () => {
-    setIsGeneratingAvatars(true);
-    try {
-      const newOptions = generateAvatarOptions(6, selectedAvatarStyle);
-      setAvatarOptions(newOptions);
-      setSelectedAvatarSeed(null); // Reset selection
-    } catch (error) {
-      console.error("Failed to generate avatar options:", error);
-    } finally {
-      setIsGeneratingAvatars(false);
+  const applyTwitterProfile = () => {
+    if (user) {
+      const handle = username ? `@${username}` : user.name || "";
+      setName(handle);
+      if (user.image) setUploadedImage(user.image);
+      setPrefilledFromTwitter(true);
     }
   };
 
-  const handleStyleChange = async (newStyle: AvatarStyle) => {
-    setSelectedAvatarStyle(newStyle);
-    setSelectedAvatarSeed(null);
-    setIsGeneratingAvatars(true);
-    try {
-      const newOptions = generateAvatarOptions(6, newStyle);
-      setAvatarOptions(newOptions);
-    } catch (error) {
-      console.error("Failed to generate avatar options:", error);
-    } finally {
-      setIsGeneratingAvatars(false);
-    }
-  };
+  // Removed random avatar style/options logic
 
   if (!isOpen) return null;
 
@@ -132,29 +112,16 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
     setIsSubmitting(true);
 
     try {
-      let entry: WaitlistFormData;
-
-      if (activeTab === "anime") {
-        if (!selectedAvatarSeed) {
-          alert("Please select an anime avatar");
-          return;
-        }
-        entry = {
-          name: name.trim(),
-          walletAddress: walletAddress.trim(),
-          avatar: generateAvatarUrl(selectedAvatarSeed, selectedAvatarStyle),
-          avatarType: "avatar_seed",
-          avatarSeed: selectedAvatarSeed,
-          avatarStyle: selectedAvatarStyle,
-        };
-      } else {
-        entry = {
-          name: name.trim(),
-          walletAddress: walletAddress.trim(),
-          avatar: uploadedImage || "",
-          avatarType: activeTab,
-        };
+      if (!uploadedImage) {
+        alert("Please sign in with X to use your profile photo");
+        return;
       }
+      const entry: WaitlistFormData = {
+        name: name.trim(),
+        walletAddress: walletAddress.trim(),
+        avatar: uploadedImage,
+        avatarType: "upload", // Use Twitter image URL as upload type
+      };
 
       await onSubmit(entry);
 
@@ -162,9 +129,6 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
       setName("");
       setWalletAddress("");
       setUploadedImage(null);
-      setActiveTab("anime");
-      setSelectedAvatarSeed(null);
-      setAvatarOptions([]);
       setErrors({});
     } catch (error) {
       console.error("Error submitting waitlist entry:", error);
@@ -172,37 +136,7 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
       setIsSubmitting(false);
     }
   };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      alert("Please select an image file");
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Image size should be less than 5MB");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      setUploadedImage(result);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const clearUploadedImage = () => {
-    setUploadedImage(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
+  // Removed manual image upload handlers
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => (!open ? onClose() : null)}>
@@ -217,6 +151,56 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
         </DialogHeader>
 
         <div className="space-y-3 sm:space-y-4 overflow-hidden smooth-scroll scrollbar-hide">
+          {/* Twitter Auth / Profile Section */}
+          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-2 flex items-center justify-between">
+            {isAuthenticated && user ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage
+                      src={user.image || undefined}
+                      alt={user.name || ""}
+                    />
+                    <AvatarFallback>
+                      {(user.name || "U").slice(0, 1)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">{user.name}</span>
+                    {username && (
+                      <span className="text-xs text-white/70">@{username}</span>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={applyTwitterProfile}
+                  className="text-white/70 border-white/30 hover:bg-white/20 hover:text-white transition-all"
+                >
+                  Use profile
+                </Button>
+              </>
+            ) : (
+              <div className="w-full flex items-center justify-between gap-2">
+                <span className="text-sm text-white/80">
+                  Sign in to use your X profile
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={login}
+                  disabled={isAuthLoading}
+                  className="text-white/70 border-white/30 hover:bg-white/20 hover:text-white transition-all"
+                >
+                  {isAuthLoading ? "Signing in..." : "Sign in with X"}
+                </Button>
+              </div>
+            )}
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-2 sm:space-y-3">
             {/* Name Field */}
             <div className="space-y-2">
@@ -257,165 +241,29 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
               )}
             </div>
 
-            {/* Avatar Selection */}
-            <div className="space-y-3">
-              <Label>Choose Your Avatar</Label>
-              <Tabs
-                value={activeTab}
-                onValueChange={(value) =>
-                  setActiveTab(value as "upload" | "anime")
-                }
-              >
-                <TabsList className="grid w-full grid-cols-2 bg-white/10 backdrop-blur-sm border border-white/20">
-                  <TabsTrigger
-                    value="anime"
-                    className="flex items-center gap-2"
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    Random Avatars
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="upload"
-                    className="flex items-center gap-2"
-                  >
-                    <Upload className="h-4 w-4" />
-                    Upload Image
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="anime" className="space-y-1.5">
-                  {/* Style Selection */}
-                  <div className="space-y-1">
-                    <Label className="text-sm text-white/80">
-                      Avatar Style
-                    </Label>
-                    <div className="flex gap-1 overflow-x-auto scrollbar-hide pb-0.5">
-                      {Object.keys(AVATAR_STYLES).map((style) => (
-                        <button
-                          key={style}
-                          type="button"
-                          onClick={() =>
-                            handleStyleChange(style as AvatarStyle)
-                          }
-                          className={`px-2 py-0.5 sm:py-1 rounded-lg text-xs whitespace-nowrap transition-all font-medium flex-shrink-0 ${
-                            selectedAvatarStyle === style
-                              ? "bg-orange-500 text-white shadow-lg"
-                              : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
-                          }`}
-                        >
-                          {getStyleDisplayName(style as AvatarStyle)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Avatar Options Grid */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm text-white/80">
-                        Choose Avatar
-                      </Label>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={generateNewAvatarOptions}
-                        disabled={isGeneratingAvatars}
-                        className="text-white/70 border-white/30 hover:bg-white/20 hover:text-white transition-all h-8 px-3"
-                      >
-                        <RefreshCw
-                          className={`h-3 w-3 ${
-                            isGeneratingAvatars ? "animate-spin" : ""
-                          }`}
-                        />
-                      </Button>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 p-2 place-items-center bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg">
-                      {isGeneratingAvatars
-                        ? // Loading skeletons
-                          Array.from({ length: 6 }).map((_, i) => (
-                            <div
-                              key={i}
-                              className="w-16 h-16 bg-white/20 rounded-lg animate-pulse"
-                            />
-                          ))
-                        : avatarOptions.map((seed) => (
-                            <button
-                              key={seed}
-                              type="button"
-                              onClick={() => setSelectedAvatarSeed(seed)}
-                              className={`w-16 h-16 rounded-lg overflow-hidden transition-all hover:scale-105 ${
-                                selectedAvatarSeed === seed
-                                  ? "ring-2 ring-orange-500 ring-offset-1 ring-offset-black/20"
-                                  : "hover:ring-1 hover:ring-white/30"
-                              }`}
-                            >
-                              <img
-                                src={generateAvatarUrl(
-                                  seed,
-                                  selectedAvatarStyle,
-                                  {
-                                    backgroundColor: getRandomBackground(),
-                                  }
-                                )}
-                                alt="Avatar option"
-                                className="w-full h-full object-cover"
-                                loading="lazy"
-                              />
-                            </button>
-                          ))}
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="upload" className="space-y-1.5">
-                  <div className="border-2 border-dashed border-white/30 bg-white/5 backdrop-blur-sm rounded-lg p-2 sm:p-3 text-center">
-                    {uploadedImage ? (
-                      <div className="space-y-1.5">
-                        <img
-                          src={uploadedImage}
-                          alt="Uploaded avatar"
-                          className="w-12 h-12 sm:w-14 sm:h-14 rounded-full mx-auto object-cover border-2 border-orange-500"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={clearUploadedImage}
-                          className="text-white/70 border-white/30 hover:bg-white/20 hover:text-white transition-all text-xs sm:text-sm"
-                        >
-                          Remove Image
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="space-y-1.5">
-                        <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-white/50 mx-auto" />
-                        <div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => fileInputRef.current?.click()}
-                            className="text-white/70 border-white/30 hover:bg-white/20 hover:text-white transition-all text-xs sm:text-sm"
-                          >
-                            Choose Image
-                          </Button>
-                          <p className="text-xs sm:text-sm text-white/50 mt-0.5">
-                            PNG, JPG up to 5MB
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
+            {/* Avatar Preview (Twitter image) */}
+            <div className="space-y-2">
+              <Label>Avatar</Label>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-orange-500/70">
+                  {uploadedImage ? (
+                    <img
+                      src={uploadedImage}
+                      alt="Twitter avatar"
+                      className="w-full h-full object-cover"
                     />
-                  </div>
-                </TabsContent>
-              </Tabs>
+                  ) : (
+                    <div className="w-full h-full bg-white/10 flex items-center justify-center text-white/60 text-xs">
+                      No avatar
+                    </div>
+                  )}
+                </div>
+                <div className="text-xs text-white/70">
+                  {uploadedImage
+                    ? "Using your X profile photo"
+                    : "Sign in with X above to use your profile photo"}
+                </div>
+              </div>
             </div>
 
             {/* Submit Button */}

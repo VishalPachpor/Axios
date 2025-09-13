@@ -183,19 +183,20 @@ export function useThreeGlobe(
         }
       };
 
-      if (
-        entry.avatarType === "avatar_seed" &&
-        entry.avatar.startsWith("https://")
-      ) {
+      const isHttpImage =
+        typeof entry.avatar === "string" &&
+        (entry.avatar.startsWith("https://") ||
+          entry.avatar.startsWith("http://"));
+      const isDataImage =
+        typeof entry.avatar === "string" && entry.avatar.startsWith("data:");
+
+      if (isHttpImage) {
         const img = new Image();
         img.crossOrigin = "anonymous";
         img.onload = () => setTextureFromImage(img);
         img.onerror = () => createEmojiTexture("🎭", targetMesh);
         img.src = entry.avatar;
-      } else if (
-        entry.avatarType === "upload" &&
-        entry.avatar.startsWith("data:")
-      ) {
+      } else if (isDataImage) {
         const img = new Image();
         img.onload = () => setTextureFromImage(img);
         img.src = entry.avatar;
@@ -578,12 +579,14 @@ export function useThreeGlobe(
         const profile = intersects[0].object.userData as { id: number };
         const entryData = getEntryByProfileIdRef.current(profile.id);
         if (entryData) {
-          // Use new tooltip function with auto-hide for mobile
+          const display = entryData.name?.startsWith("@")
+            ? entryData.name
+            : entryData.name;
           showTooltipWithAutoHide(
-            `<strong>${entryData.name}</strong><br>Waitlist Member`,
+            `<strong>${display}</strong><br>Waitlist Member`,
             (mouse.x * window.innerWidth) / 2 + window.innerWidth / 2 + 10,
             (-mouse.y * window.innerHeight) / 2 + window.innerHeight / 2 - 10,
-            3000 // Auto-hide after 3 seconds on mobile
+            3000
           );
         } else {
           onEmptySpotClickRef.current(profile.id);
@@ -621,7 +624,9 @@ export function useThreeGlobe(
         };
         const entryData = getEntryByProfileIdRef.current(profile.id);
         const content = entryData
-          ? `<strong>${entryData.name}</strong><br>Waitlist Member`
+          ? `<strong>${
+              entryData.name?.startsWith("@") ? entryData.name : entryData.name
+            }</strong><br>Waitlist Member`
           : `<strong>Available Spot</strong><br><span style="color: #f97316;">Click to join waitlist</span>`;
 
         // Only show hover tooltips on desktop (larger screens)

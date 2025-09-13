@@ -14,6 +14,7 @@ const GlobeCanvas: React.FC = () => {
   const [waitlistEntries, setWaitlistEntries] = useState<
     Map<number, WaitlistEntry>
   >(new Map());
+  const [alreadyJoined, setAlreadyJoined] = useState<boolean>(false);
 
   const getEntryByProfileId = useMemo(
     () => (id: number) => waitlistEntries.get(id),
@@ -23,6 +24,10 @@ const GlobeCanvas: React.FC = () => {
   const { mountRef, loading, loadingProgress, tooltip, applyEntryToGlobe } =
     useThreeGlobe(waitlistEntries, {
       onEmptySpotClick: (profileId) => {
+        if (alreadyJoined) {
+          setWaitlistError("You have already joined the waitlist.");
+          return;
+        }
         setSelectedProfileId(profileId);
         setWaitlistPopupOpen(true);
         setWaitlistError(null);
@@ -88,6 +93,12 @@ const GlobeCanvas: React.FC = () => {
         const entriesMap = new Map<number, WaitlistEntry>();
         allEntries.forEach((entry) => entriesMap.set(entry.profileId, entry));
         setWaitlistEntries(entriesMap);
+        // Check current user status
+        const res = await fetch("/api/waitlist/me", { cache: "no-store" });
+        if (res.ok) {
+          const { entry } = await res.json();
+          setAlreadyJoined(!!entry);
+        }
       } catch (error) {
         console.error("Failed to load waitlist entries:", error);
       }

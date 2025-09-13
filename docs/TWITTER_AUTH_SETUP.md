@@ -26,7 +26,9 @@ Copy `env.template` to `.env.local` and fill in your Twitter OAuth credentials:
 2. Create a new app or use existing one
 3. Enable OAuth 2.0
 4. Set callback URL: `http://localhost:3000/api/auth/callback/twitter`
-5. Copy Client ID and Client Secret to your `.env.local`
+5. Enable OAuth 2.0 with PKCE
+6. Set the following scopes: `users.read`, `tweet.read`, `offline.access`
+7. Copy Client ID and Client Secret to your `.env.local`
 
 ## Features Implemented
 

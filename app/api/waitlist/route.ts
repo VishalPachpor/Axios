@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { supabase } from "@/lib/supabase";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 // Simple in-memory rate limiter (per process). For production, use KV/Upstash.
 const RATE_LIMIT_WINDOW_MS = 60_000;
@@ -43,6 +45,20 @@ export async function POST(req: NextRequest) {
   const rl = rateLimit(req);
   if (rl) return rl;
 
+  // Require authenticated Twitter session
+  const session: any = await getServerSession(authOptions as any);
+  if (!session || !session.user) {
+    return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  }
+  const twitterUserId = (session.user as any).id as string | undefined;
+  const twitterUsername = (session.user as any).username as string | undefined;
+  if (!twitterUserId) {
+    return NextResponse.json(
+      { error: "Twitter account not available in session" },
+      { status: 400 }
+    );
+  }
+
   const json = await req.json().catch(() => null);
   const parse = payloadSchema.safeParse(json);
   if (!parse.success) {
@@ -70,6 +86,20 @@ export async function POST(req: NextRequest) {
 
   // Enforce unique wallet and unique profile position with upsert-like logic
   try {
+    // Hard stop if this Twitter user already joined once
+    const { data: existingByTwitter } = await supabase
+      .from("waitlist_entries")
+      .select("*")
+      .eq("twitter_user_id", twitterUserId)
+      .maybeSingle();
+
+    if (existingByTwitter) {
+      return NextResponse.json(
+        { error: "This Twitter account already joined the waitlist" },
+        { status: 409 }
+      );
+    }
+
     // Check existing by wallet
     const { data: existingByWallet } = await supabase
       .from("waitlist_entries")
@@ -82,22 +112,11 @@ export async function POST(req: NextRequest) {
       if (existingByWallet.profile_id === profileId) {
         return NextResponse.json(existingByWallet, { status: 200 });
       }
-      // Move to new profile
-      const { data, error } = await supabase
-        .from("waitlist_entries")
-        .update({
-          profile_id: profileId,
-          name,
-          avatar,
-          avatar_type: avatarType,
-          avatar_seed: avatarSeed,
-          avatar_style: avatarStyle,
-        })
-        .eq("wallet_address", walletAddress)
-        .select()
-        .single();
-      if (error) throw error;
-      return NextResponse.json(data, { status: 200 });
+      // Do not allow moving positions; one-time join only
+      return NextResponse.json(
+        { error: "This wallet is already on the waitlist" },
+        { status: 409 }
+      );
     }
 
     // Ensure profileId not taken
@@ -124,6 +143,8 @@ export async function POST(req: NextRequest) {
         avatar_seed: avatarSeed,
         avatar_style: avatarStyle,
         profile_id: profileId,
+        twitter_user_id: twitterUserId,
+        twitter_username: twitterUsername ?? null,
       })
       .select()
       .single();
