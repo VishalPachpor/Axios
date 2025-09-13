@@ -10,7 +10,7 @@ export default function WaitlistSection() {
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Initialize audio element and events (no autoplay)
+  // Initialize audio element and events with auto-play on first visit
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -28,35 +28,66 @@ export default function WaitlistSection() {
     audio.addEventListener("ended", onEnded);
     audio.addEventListener("error", onError);
 
-    // If user previously opted-in, start on first interaction
-    const prefEnabled = (() => {
+    // Check user preference - default to enabled for auto-play
+    const userPreference = (() => {
       try {
-        return localStorage.getItem(MUSIC_PREF_KEY) === "1";
+        const stored = localStorage.getItem(MUSIC_PREF_KEY);
+        // If no preference stored (first visit), default to enabled
+        return stored === null ? true : stored === "1";
       } catch {
-        return false;
+        return true; // Default to enabled if localStorage fails
       }
     })();
 
     const handleFirstInteraction = () => {
       setHasUserInteracted(true);
-      if (prefEnabled && audioRef.current && audioRef.current.paused) {
+      if (userPreference && audioRef.current && audioRef.current.paused) {
         audioRef.current
           .play()
-          .then(() => setIsPlaying(true))
-          .catch(() => setIsPlaying(false));
+          .then(() => {
+            setIsPlaying(true);
+            // Set preference to enabled on successful auto-play
+            try {
+              localStorage.setItem(MUSIC_PREF_KEY, "1");
+            } catch {}
+          })
+          .catch(() => {
+            setIsPlaying(false);
+            // Don't set preference if auto-play fails
+          });
       }
     };
 
-    if (prefEnabled) {
-      document.addEventListener("pointerdown", handleFirstInteraction, {
-        once: true,
-      });
+    // Try immediate auto-play first (might work on desktop)
+    if (userPreference) {
+      audio
+        .play()
+        .then(() => {
+          setIsPlaying(true);
+          setHasUserInteracted(true);
+          try {
+            localStorage.setItem(MUSIC_PREF_KEY, "1");
+          } catch {}
+        })
+        .catch(() => {
+          // Auto-play blocked, wait for user interaction
+          setIsPlaying(false);
+          document.addEventListener("pointerdown", handleFirstInteraction, {
+            once: true,
+          });
+          document.addEventListener("keydown", handleFirstInteraction, {
+            once: true,
+          });
+          document.addEventListener("touchstart", handleFirstInteraction, {
+            once: true,
+          });
+        });
     }
 
     return () => {
-      if (prefEnabled) {
-        document.removeEventListener("pointerdown", handleFirstInteraction);
-      }
+      document.removeEventListener("pointerdown", handleFirstInteraction);
+      document.removeEventListener("keydown", handleFirstInteraction);
+      document.removeEventListener("touchstart", handleFirstInteraction);
       audio.removeEventListener("play", onPlay);
       audio.removeEventListener("pause", onPause);
       audio.removeEventListener("ended", onEnded);
@@ -100,6 +131,7 @@ export default function WaitlistSection() {
         src="/audio/waitlist.mp3"
         preload="auto"
         playsInline
+        loop
         className="hidden"
       />
       {/* Hero Section with 3D Globe - Fixed Height */}

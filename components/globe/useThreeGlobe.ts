@@ -89,6 +89,9 @@ export function useThreeGlobe(
     touches: [] as Touch[],
     lastPinchDistance: 0,
     isPinching: false,
+    // Mobile tooltip management
+    tooltipTimeoutId: null as NodeJS.Timeout | null,
+    lastTooltipTime: 0,
   }).current;
 
   // Helper: create circular emoji texture on a mesh
@@ -391,8 +394,50 @@ export function useThreeGlobe(
       return Math.sqrt(dx * dx + dy * dy);
     };
 
+    // Helper function to show tooltip with auto-hide for mobile
+    const showTooltipWithAutoHide = (
+      content: string,
+      x: number,
+      y: number,
+      duration = 3000
+    ) => {
+      // Clear any existing timeout
+      if (stateRef.tooltipTimeoutId) {
+        clearTimeout(stateRef.tooltipTimeoutId);
+      }
+
+      // Show tooltip immediately
+      setTooltip({
+        visible: true,
+        content,
+        x,
+        y,
+      });
+
+      // Auto-hide after duration on mobile
+      if (window.innerWidth <= 768) {
+        // Mobile breakpoint
+        stateRef.tooltipTimeoutId = setTimeout(() => {
+          setTooltip((prev) => ({ ...prev, visible: false }));
+          stateRef.tooltipTimeoutId = null;
+        }, duration);
+      }
+    };
+
+    // Helper function to hide tooltip
+    const hideTooltip = () => {
+      if (stateRef.tooltipTimeoutId) {
+        clearTimeout(stateRef.tooltipTimeoutId);
+        stateRef.tooltipTimeoutId = null;
+      }
+      setTooltip((prev) => ({ ...prev, visible: false }));
+    };
+
     const handleMouseDown = (event: MouseEvent | TouchEvent) => {
       event.preventDefault();
+
+      // Hide tooltip when user starts interacting
+      hideTooltip();
 
       if ("touches" in event && event.touches.length > 1) {
         // Multi-touch (pinch gesture)
@@ -533,13 +578,13 @@ export function useThreeGlobe(
         const profile = intersects[0].object.userData as { id: number };
         const entryData = getEntryByProfileIdRef.current(profile.id);
         if (entryData) {
-          setTooltip({
-            visible: true,
-            content: `<strong>${entryData.name}</strong><br>Waitlist Member`,
-            x: (mouse.x * window.innerWidth) / 2 + window.innerWidth / 2 + 10,
-            y:
-              (-mouse.y * window.innerHeight) / 2 + window.innerHeight / 2 - 10,
-          });
+          // Use new tooltip function with auto-hide for mobile
+          showTooltipWithAutoHide(
+            `<strong>${entryData.name}</strong><br>Waitlist Member`,
+            (mouse.x * window.innerWidth) / 2 + window.innerWidth / 2 + 10,
+            (-mouse.y * window.innerHeight) / 2 + window.innerHeight / 2 - 10,
+            3000 // Auto-hide after 3 seconds on mobile
+          );
         } else {
           onEmptySpotClickRef.current(profile.id);
         }
@@ -578,14 +623,37 @@ export function useThreeGlobe(
         const content = entryData
           ? `<strong>${entryData.name}</strong><br>Waitlist Member`
           : `<strong>Available Spot</strong><br><span style="color: #f97316;">Click to join waitlist</span>`;
-        setTooltip({
-          visible: true,
-          content,
-          x: (mouse.x * window.innerWidth) / 2 + window.innerWidth / 2 + 10,
-          y: (-mouse.y * window.innerHeight) / 2 + window.innerHeight / 2 - 10,
-        });
+
+        // Only show hover tooltips on desktop (larger screens)
+        if (window.innerWidth > 768) {
+          setTooltip({
+            visible: true,
+            content,
+            x: (mouse.x * window.innerWidth) / 2 + window.innerWidth / 2 + 10,
+            y:
+              (-mouse.y * window.innerHeight) / 2 + window.innerHeight / 2 - 10,
+          });
+        }
       } else {
-        setTooltip((prev) => ({ ...prev, visible: false }));
+        hideTooltip();
+      }
+    };
+
+    // Global touch handler to hide tooltips when touching outside
+    const handleGlobalTouch = (event: TouchEvent) => {
+      // If touch is outside the renderer canvas, hide tooltip
+      const rect = renderer.domElement.getBoundingClientRect();
+      const touch = event.touches[0] || event.changedTouches[0];
+      if (touch) {
+        const isOutside =
+          touch.clientX < rect.left ||
+          touch.clientX > rect.right ||
+          touch.clientY < rect.top ||
+          touch.clientY > rect.bottom;
+
+        if (isOutside) {
+          hideTooltip();
+        }
       }
     };
 
@@ -606,6 +674,7 @@ export function useThreeGlobe(
       passive: false,
     });
     window.addEventListener("resize", handleResize);
+    window.addEventListener("touchstart", handleGlobalTouch, { passive: true });
 
     // Animation
     let animationFrameId: number;
@@ -648,6 +717,7 @@ export function useThreeGlobe(
     return () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("touchstart", handleGlobalTouch);
       renderer.domElement.removeEventListener("mousedown", handleMouseDown);
       renderer.domElement.removeEventListener("mousemove", handleMouseMove);
       renderer.domElement.removeEventListener("mouseup", handleMouseUp);
@@ -662,6 +732,12 @@ export function useThreeGlobe(
       );
       renderer.domElement.removeEventListener("touchend", handleMouseUp as any);
       mountRef.current?.removeChild(renderer.domElement);
+
+      // Clean up tooltip timeout
+      if (stateRef.tooltipTimeoutId) {
+        clearTimeout(stateRef.tooltipTimeoutId);
+      }
+
       if (stateRef.scene) {
         stateRef.scene.traverse((object: THREE.Object3D) => {
           if (object instanceof THREE.Mesh) {

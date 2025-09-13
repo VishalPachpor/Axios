@@ -196,19 +196,9 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => (!open ? onClose() : null)}>
-      <DialogContent className="sm:max-w-md w-[90vw] max-h-[90vh] overflow-y-auto bg-white/10 backdrop-blur-xl border border-white/20 text-white">
-        <DialogHeader className="relative">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="absolute -top-2 -right-2 h-8 w-8 p-0 text-white/70 hover:text-white hover:bg-white/10 z-10"
-          >
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-          </Button>
-          <DialogTitle className="text-xl sm:text-2xl font-bold text-center pr-8">
+      <DialogContent className="sm:max-w-md w-[90vw] max-h-[90vh] overflow-y-auto bg-white/10 backdrop-blur-xl border border-white/20 text-white [&>button]:text-white/70 [&>button]:hover:text-white [&>button]:hover:bg-white/10">
+        <DialogHeader>
+          <DialogTitle className="text-xl sm:text-2xl font-bold text-center">
             Join the Waitlist
           </DialogTitle>
           <DialogDescription className="text-center text-white/70 text-sm sm:text-base">
