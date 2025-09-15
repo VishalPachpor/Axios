@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useThreeGlobe } from "@/components/globe/useThreeGlobe";
 import WaitlistPopup from "@/components/waitlist/waitlist-popup";
 import waitlistService, { WaitlistEntry } from "@/lib/waitlist-service";
+import { Button } from "@/components/ui/button";
 
 const GlobeCanvas: React.FC = () => {
   const [isWaitlistPopupOpen, setWaitlistPopupOpen] = useState(false);
@@ -209,6 +210,42 @@ const GlobeCanvas: React.FC = () => {
       {waitlistError && (
         <div className="fixed top-4 right-4 bg-red-500/90 text-white px-4 py-2 rounded-lg shadow-lg z-[10000]">
           {waitlistError}
+        </div>
+      )}
+
+      {/* Join Waitlist Button - bottom center with glowing border (shows only after loading) */}
+      {!loading && (
+        <div className="absolute inset-x-0 bottom-6 z-[1100] flex justify-center px-4 pointer-events-none">
+          <div className="relative group pointer-events-auto">
+            <div className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-orange-500 via-orange-400 to-amber-500 blur opacity-70 group-hover:opacity-100 transition duration-300" />
+            <Button
+              onClick={() => {
+                if (alreadyJoined) {
+                  setWaitlistError("You have already joined the waitlist.");
+                  return;
+                }
+                // Pick the first available spot from 1..150
+                let chosen: number | null = null;
+                for (let i = 1; i <= 150; i++) {
+                  if (!waitlistEntries.has(i)) {
+                    chosen = i;
+                    break;
+                  }
+                }
+                if (!chosen) {
+                  setWaitlistError("No available spots at the moment.");
+                  return;
+                }
+                setSelectedProfileId(chosen);
+                setWaitlistPopupOpen(true);
+                setWaitlistError(null);
+              }}
+              className="relative bg-black/70 hover:bg-black/60 text-white border border-orange-500/50 px-4 py-2 h-9 rounded-full shadow-[0_0_20px_rgba(249,115,22,0.3)]"
+              size="sm"
+            >
+              Join waitlist
+            </Button>
+          </div>
         </div>
       )}
     </div>

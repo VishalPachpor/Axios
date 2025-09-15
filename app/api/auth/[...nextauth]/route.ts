@@ -3,6 +3,26 @@ import TwitterProvider from "next-auth/providers/twitter";
 import { NextAuthOptions } from "next-auth";
 
 export const authOptions: NextAuthOptions = {
+  // Helps with dynamic hosts (mobile, proxies) when NEXTAUTH_URL might differ
+  trustHost: true,
+  // Optional: set cookie domain for production to ensure consistent session on the same root domain
+  cookies: process.env.NEXTAUTH_COOKIE_DOMAIN
+    ? {
+        sessionToken: {
+          name:
+            process.env.NODE_ENV === "production"
+              ? "__Secure-next-auth.session-token"
+              : "next-auth.session-token",
+          options: {
+            httpOnly: true,
+            sameSite: "lax",
+            path: "/",
+            secure: process.env.NODE_ENV === "production",
+            domain: process.env.NEXTAUTH_COOKIE_DOMAIN,
+          },
+        },
+      }
+    : undefined,
   providers: [
     TwitterProvider({
       clientId: process.env.TWITTER_CLIENT_ID!,
@@ -14,11 +34,13 @@ export const authOptions: NextAuthOptions = {
         },
       },
       profile(profile) {
+        const raw = profile as any;
+        const data = raw?.data ?? raw;
         return {
-          id: (profile as any).data?.id,
-          name: (profile as any).data?.name,
-          email: ((profile as any).data?.username || "user") + "@twitter.local", // Twitter doesn't provide email in v2
-          image: (profile as any).data?.profile_image_url?.replace(
+          id: data?.id,
+          name: data?.name,
+          email: ((data?.username as string) || "user") + "@twitter.local", // Twitter doesn't provide email in v2
+          image: (data?.profile_image_url as string | undefined)?.replace(
             "_normal",
             ""
           ), // Get larger image
@@ -29,11 +51,12 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, account, profile }) {
       if (account && profile) {
-        token.username = (profile as any).data?.username;
-        token.picture = (profile as any).data?.profile_image_url?.replace(
-          "_normal",
-          ""
-        );
+        const raw = profile as any;
+        const data = raw?.data ?? raw;
+        token.username = data?.username as string | undefined;
+        token.picture = (
+          data?.profile_image_url as string | undefined
+        )?.replace("_normal", "");
         token.accessToken = account.access_token;
         token.refreshToken = account.refresh_token;
       }
@@ -48,6 +71,20 @@ export const authOptions: NextAuthOptions = {
         (session as any).refreshToken = token.refreshToken;
       }
       return session;
+    },
+    async redirect({ url, baseUrl }) {
+      try {
+        // Allow relative callback URLs
+        if (url.startsWith("/")) return new URL(url, baseUrl).toString();
+        // Allow same-origin absolute URLs
+        const target = new URL(url);
+        const base = new URL(baseUrl);
+        if (target.origin === base.origin) return url;
+        // Fallback to baseUrl for external URLs
+        return baseUrl;
+      } catch {
+        return baseUrl;
+      }
     },
   },
   pages: {

@@ -7,7 +7,9 @@ export function useAuth() {
   const { data: session, status } = useSession();
 
   const login = useCallback(() => {
-    signIn("twitter", { callbackUrl: "/waitlist" });
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const callbackUrl = origin ? `${origin}/waitlist` : "/waitlist";
+    signIn("twitter", { callbackUrl });
   }, []);
 
   const logout = useCallback(() => {
