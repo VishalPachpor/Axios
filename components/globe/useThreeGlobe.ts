@@ -326,12 +326,31 @@ export function useThreeGlobe(
     mountRef.current.appendChild(renderer.domElement);
 
     setLoadingProgress(60);
+
+    // Function to update circle sizes based on screen size
+    const updateCircleSizes = () => {
+      const isMobile = window.innerWidth < 768;
+      const newRadius = isMobile ? 16 : 20;
+
+      stateRef.profileMeshes.forEach((mesh) => {
+        const geometry = mesh.geometry as THREE.CircleGeometry;
+        if (geometry.parameters.radius !== newRadius) {
+          // Dispose old geometry to prevent memory leaks
+          geometry.dispose();
+          // Create new geometry with updated radius
+          const newGeometry = new THREE.CircleGeometry(newRadius, 24);
+          mesh.geometry = newGeometry;
+        }
+      });
+    };
+
     const globeGroup = new THREE.Group();
     stateRef.globeGroup = globeGroup;
     stateRef.profileMeshes = [];
     profileData.forEach((profile) => {
       // Use pre-calculated position from collision detection
-      const geometry = new THREE.CircleGeometry(20, 24); // Increased radius for better visibility
+      // Start with desktop size, will be updated on resize
+      const geometry = new THREE.CircleGeometry(20, 24);
       const material = new THREE.MeshBasicMaterial({
         color: profile.color,
         transparent: true,
@@ -347,6 +366,9 @@ export function useThreeGlobe(
       stateRef.profileMeshes.push(profileMesh);
     });
     scene.add(globeGroup);
+
+    // Set initial circle sizes based on screen size
+    updateCircleSizes();
 
     setLoadingProgress(80);
     // Starfield
@@ -699,6 +721,9 @@ export function useThreeGlobe(
       stateRef.camera.aspect = window.innerWidth / window.innerHeight;
       stateRef.camera.updateProjectionMatrix();
       stateRef.renderer.setSize(window.innerWidth, window.innerHeight);
+
+      // Update circle sizes for mobile/desktop
+      updateCircleSizes();
 
       // Adjust camera distance for mobile after resize
       const isMobile = window.innerWidth < 768;
