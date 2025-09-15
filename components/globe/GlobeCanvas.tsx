@@ -5,8 +5,10 @@ import { useThreeGlobe } from "@/components/globe/useThreeGlobe";
 import WaitlistPopup from "@/components/waitlist/waitlist-popup";
 import waitlistService, { WaitlistEntry } from "@/lib/waitlist-service";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
 
 const GlobeCanvas: React.FC = () => {
+  const { isAuthenticated } = useAuth();
   const [isWaitlistPopupOpen, setWaitlistPopupOpen] = useState(false);
   const [selectedProfileId, setSelectedProfileId] = useState<number | null>(
     null
@@ -213,8 +215,8 @@ const GlobeCanvas: React.FC = () => {
         </div>
       )}
 
-      {/* Join Waitlist Button - bottom center with glowing border (shows only after loading) */}
-      {!loading && (
+      {/* Join Waitlist Button - bottom center with glowing border (shows only after loading and when not authenticated) */}
+      {!loading && !isAuthenticated && (
         <div className="absolute inset-x-0 bottom-6 z-[1100] flex justify-center px-4 pointer-events-none">
           <div className="relative group pointer-events-auto">
             <div className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-orange-500 via-orange-400 to-amber-500 blur opacity-70 group-hover:opacity-100 transition duration-300" />
