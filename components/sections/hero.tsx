@@ -398,7 +398,7 @@ export default function HeroSection() {
             size="lg"
             className="bg-primary text-primary-foreground px-12 py-4 rounded-full font-medium transition-all duration-200 hover:bg-primary/90 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl min-w-64"
           >
-            <Link href="/waitlist#waitlist-section">
+            <Link href="/waitlist">
               Join the Waitlist
               <ArrowRight className="ml-3 h-5 w-5 transition-transform duration-200 group-hover:translate-x-1" />
             </Link>

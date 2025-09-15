@@ -92,6 +92,8 @@ export function useThreeGlobe(
     // Mobile tooltip management
     tooltipTimeoutId: null as NodeJS.Timeout | null,
     lastTooltipTime: 0,
+    // Click debounce for mobile
+    lastClickTime: 0,
   }).current;
 
   // Helper: create circular emoji texture on a mesh
@@ -267,19 +269,21 @@ export function useThreeGlobe(
       });
     }, 100);
 
-    setLoadingProgress(20);
+    setLoadingProgress(10);
     const scene = new THREE.Scene();
     scene.fog = new THREE.Fog(0x0a0a0a, 1000, 3000);
     stateRef.scene = scene;
 
-    setLoadingProgress(30);
+    setLoadingProgress(20);
     const camera = new THREE.PerspectiveCamera(
       60,
       window.innerWidth / window.innerHeight,
       1,
       5000
     );
-    camera.position.z = 800;
+    // Adjust camera distance based on screen size for better mobile visibility
+    const isMobile = window.innerWidth < 768;
+    camera.position.z = isMobile ? 1200 : 800;
     stateRef.camera = camera;
 
     setLoadingProgress(40);
@@ -294,7 +298,7 @@ export function useThreeGlobe(
     stateRef.renderer = renderer;
     mountRef.current.appendChild(renderer.domElement);
 
-    setLoadingProgress(50);
+    setLoadingProgress(60);
     const globeGroup = new THREE.Group();
     stateRef.globeGroup = globeGroup;
     const radius = 300;
@@ -322,7 +326,7 @@ export function useThreeGlobe(
     });
     scene.add(globeGroup);
 
-    setLoadingProgress(70);
+    setLoadingProgress(80);
     // Starfield
     const particleCount = 550;
     const pGeometry = new THREE.BufferGeometry();
@@ -532,7 +536,10 @@ export function useThreeGlobe(
           const zoomFactor = distanceChange > 0 ? 0.98 : 1.02;
           if (stateRef.camera) {
             stateRef.camera.position.multiplyScalar(zoomFactor);
-            stateRef.camera.position.clampLength(200, 2000); // Extended range for mobile
+            // Mobile-friendly zoom limits
+            const minDistance = window.innerWidth < 768 ? 800 : 200;
+            const maxDistance = window.innerWidth < 768 ? 2500 : 2000;
+            stateRef.camera.position.clampLength(minDistance, maxDistance);
           }
           stateRef.lastPinchDistance = currentDistance;
         }
@@ -555,7 +562,9 @@ export function useThreeGlobe(
         const deltaX = clientX - stateRef.startMouseX;
         const deltaY = clientY - stateRef.startMouseY;
         const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-        if (distance > 15) {
+        // More forgiving drag threshold for mobile
+        const dragThreshold = "touches" in event ? 25 : 15;
+        if (distance > dragThreshold) {
           stateRef.isDragging = true;
           stateRef.isAutoRotating = false;
         }
@@ -602,7 +611,7 @@ export function useThreeGlobe(
       const deltaX = clientX - stateRef.startMouseX;
       const deltaY = clientY - stateRef.startMouseY;
       const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-      const wasClick = timeHeld < 300 && distance < 15;
+      const wasClick = timeHeld < 500 && distance < 30;
 
       if (wasClick && stateRef.isMouseDown && !stateRef.isPinching) {
         handleMouseClick();
@@ -619,6 +628,14 @@ export function useThreeGlobe(
 
     const handleMouseClick = () => {
       if (!stateRef.camera) return;
+
+      // Debounce rapid clicks (especially important for mobile)
+      const now = Date.now();
+      if (now - stateRef.lastClickTime < 500) {
+        return; // Ignore clicks within 500ms of each other
+      }
+      stateRef.lastClickTime = now;
+
       raycaster.setFromCamera(mouse, stateRef.camera);
       const intersects = raycaster.intersectObjects(stateRef.profileMeshes);
       if (intersects.length > 0) {
@@ -649,7 +666,10 @@ export function useThreeGlobe(
       const delta = event.deltaY > 0 ? sensitivity : 1 / sensitivity;
 
       stateRef.camera.position.multiplyScalar(delta);
-      stateRef.camera.position.clampLength(200, 2000); // Extended range for better mobile experience
+      // Mobile-friendly zoom limits
+      const minDistance = window.innerWidth < 768 ? 800 : 200;
+      const maxDistance = window.innerWidth < 768 ? 2500 : 2000;
+      stateRef.camera.position.clampLength(minDistance, maxDistance);
     };
 
     const handleResize = () => {
@@ -657,6 +677,16 @@ export function useThreeGlobe(
       stateRef.camera.aspect = window.innerWidth / window.innerHeight;
       stateRef.camera.updateProjectionMatrix();
       stateRef.renderer.setSize(window.innerWidth, window.innerHeight);
+
+      // Adjust camera distance for mobile after resize
+      const isMobile = window.innerWidth < 768;
+      const currentDistance = stateRef.camera.position.length();
+      const targetDistance = isMobile ? 1200 : 900;
+
+      // Only adjust if we're significantly off from target
+      if (Math.abs(currentDistance - targetDistance) > 100) {
+        stateRef.camera.position.normalize().multiplyScalar(targetDistance);
+      }
     };
 
     const handleHover = () => {

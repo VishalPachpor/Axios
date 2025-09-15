@@ -18,7 +18,7 @@ export default function WaitlistSection() {
     if (!audio) return;
 
     audio.loop = true;
-    audio.volume = 0.3;
+    audio.volume = 0.2;
 
     const onPlay = () => setIsPlaying(true);
     const onPause = () => setIsPlaying(false);
