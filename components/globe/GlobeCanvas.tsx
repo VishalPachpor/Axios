@@ -215,9 +215,9 @@ const GlobeCanvas: React.FC = () => {
         </div>
       )}
 
-      {/* Join Waitlist Button - bottom center with glowing border (shows only after loading and when not authenticated) */}
-      {!loading && !isAuthenticated && (
-        <div className="absolute inset-x-0 bottom-6 z-[1100] flex justify-center px-4 pointer-events-none">
+      {/* Join Waitlist Button - bottom center with glowing border (shows only after loading) */}
+      {!loading && (
+        <div className="absolute inset-x-0 bottom-4 md:bottom-6 z-[1100] flex justify-center px-4 pointer-events-none">
           <div className="relative group pointer-events-auto">
             <div className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-orange-500 via-orange-400 to-amber-500 blur opacity-70 group-hover:opacity-100 transition duration-300" />
             <Button
@@ -249,7 +249,7 @@ const GlobeCanvas: React.FC = () => {
                 setWaitlistPopupOpen(true);
                 setWaitlistError(null);
               }}
-              className="relative bg-black/70 hover:bg-black/60 text-white border border-orange-500/50 px-4 py-2 h-9 rounded-full shadow-[0_0_20px_rgba(249,115,22,0.3)]"
+              className="relative bg-black/70 hover:bg-black/60 text-white border border-orange-500/50 px-3 md:px-4 py-2 h-8 md:h-9 rounded-full shadow-[0_0_20px_rgba(249,115,22,0.3)] text-sm md:text-base"
               size="sm"
             >
               Join waitlist
