@@ -25,6 +25,29 @@ type UseThreeGlobeOptions = {
   getEntryByProfileId: (profileId: number) => WaitlistEntry | undefined;
 };
 
+// Helper function to generate equidistant points on a sphere using the Fibonacci spiral
+const generateSphericalDistribution = (
+  count: number,
+  radius: number
+): THREE.Vector3[] => {
+  const positions: THREE.Vector3[] = [];
+  const goldenRatio = (1 + Math.sqrt(5)) / 2; // Golden ratio for optimal distribution
+
+  for (let i = 0; i < count; i++) {
+    // Use Fibonacci spiral for optimal spherical distribution
+    const theta = (2 * Math.PI * i) / goldenRatio;
+    const phi = Math.acos(1 - (2 * (i + 0.5)) / count);
+
+    const x = radius * Math.sin(phi) * Math.cos(theta);
+    const y = radius * Math.sin(phi) * Math.sin(theta);
+    const z = radius * Math.cos(phi);
+
+    positions.push(new THREE.Vector3(x, y, z));
+  }
+
+  return positions;
+};
+
 const generateProfileData = (count: number) => {
   const colors = [
     "#DE6635",
@@ -39,15 +62,24 @@ const generateProfileData = (count: number) => {
     name: string;
     role: string;
     color: string;
+    position: THREE.Vector3;
   }>;
+
+  const radius = 300;
+
+  // Generate equidistant positions on the sphere using Fibonacci spiral
+  const positions = generateSphericalDistribution(count, radius);
+
   for (let i = 1; i <= count; i++) {
     profileData.push({
       id: i,
       name: "",
       role: "Waitlist Spot",
       color: colors[i % colors.length],
+      position: positions[i - 1], // Use pre-calculated equidistant position
     });
   }
+
   return profileData;
 };
 
@@ -296,16 +328,10 @@ export function useThreeGlobe(
     setLoadingProgress(60);
     const globeGroup = new THREE.Group();
     stateRef.globeGroup = globeGroup;
-    const radius = 300;
     stateRef.profileMeshes = [];
-    profileData.forEach((profile, i) => {
-      const phi = Math.acos(1 - (2 * i) / profileData.length);
-      const theta = Math.sqrt(profileData.length * Math.PI) * phi;
-      const x = radius * Math.sin(phi) * Math.cos(theta);
-      const y = radius * Math.sin(phi) * Math.sin(theta);
-      const z = radius * Math.cos(phi);
-      // Increase base avatar size and smoothness
-      const geometry = new THREE.CircleGeometry(16, 24);
+    profileData.forEach((profile) => {
+      // Use pre-calculated position from collision detection
+      const geometry = new THREE.CircleGeometry(20, 24); // Increased radius for better visibility
       const material = new THREE.MeshBasicMaterial({
         color: profile.color,
         transparent: true,
@@ -314,7 +340,7 @@ export function useThreeGlobe(
         side: THREE.DoubleSide,
       });
       const profileMesh = new THREE.Mesh(geometry, material);
-      profileMesh.position.set(x, y, z);
+      profileMesh.position.copy(profile.position);
       profileMesh.lookAt(0, 0, 0);
       profileMesh.userData = profile;
       globeGroup.add(profileMesh);

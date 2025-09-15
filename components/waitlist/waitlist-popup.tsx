@@ -185,7 +185,7 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
             ) : (
               <div className="w-full flex items-center justify-between gap-2">
                 <span className="text-sm text-white/80">
-                  Sign in to use your X profile
+                  Connect X handle
                 </span>
                 <Button
                   type="button"
@@ -195,7 +195,7 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
                   disabled={isAuthLoading}
                   className="text-white/70 border-white/30 hover:bg-white/20 hover:text-white transition-all"
                 >
-                  {isAuthLoading ? "Signing in..." : "Sign in with X"}
+                  {isAuthLoading ? "Signing in..." : "Link your X profile"}
                 </Button>
               </div>
             )}
@@ -227,7 +227,7 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
               <Input
                 id="wallet"
                 type="text"
-                placeholder="0x... or 0xvitalik.eth"
+                placeholder="0x..."
                 value={walletAddress}
                 onChange={(e) => setWalletAddress(e.target.value)}
                 required
