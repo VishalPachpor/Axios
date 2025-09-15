@@ -6,8 +6,40 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 // Simple in-memory rate limiter (per process). For production, use KV/Upstash.
 const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_BASE_MAX = 10;
 const ipToRequests: Map<string, { count: number; resetAt: number }> = new Map();
+
+// Soft capacity guardrails (can be tuned via env)
+const MAX_WAITLIST_CAPACITY = Number(
+  process.env.WAITLIST_MAX_CAPACITY || 10000
+);
+const RATE_LIMIT_MEDIUM_THRESHOLD = Number(
+  process.env.WAITLIST_MEDIUM_THRESHOLD || 1000
+);
+const RATE_LIMIT_HIGH_THRESHOLD = Number(
+  process.env.WAITLIST_HIGH_THRESHOLD || 5000
+);
+
+// Short‑lived count cache to avoid count(*) on every request
+let cachedCount: { value: number; expiresAt: number } | null = null;
+const COUNT_TTL_MS = 10_000; // 10s cache
+
+async function getWaitlistCount(): Promise<number> {
+  if (!supabase) return 0;
+  const now = Date.now();
+  if (cachedCount && now < cachedCount.expiresAt) {
+    return cachedCount.value;
+  }
+  const { count, error } = await supabase
+    .from("waitlist_entries")
+    .select("*", { count: "exact", head: true });
+  if (error) {
+    // On error, fall back to previous cached value if present
+    return cachedCount?.value ?? 0;
+  }
+  cachedCount = { value: count || 0, expiresAt: now + COUNT_TTL_MS };
+  return cachedCount.value;
+}
 
 const payloadSchema = z.object({
   name: z.string().min(1).max(255),
@@ -21,16 +53,23 @@ const payloadSchema = z.object({
   profileId: z.number().int().positive(),
 });
 
-function rateLimit(req: NextRequest): NextResponse | null {
+function getDynamicRateLimitMax(currentSize: number): number {
+  if (currentSize >= RATE_LIMIT_HIGH_THRESHOLD) return 5; // strictest
+  if (currentSize >= RATE_LIMIT_MEDIUM_THRESHOLD) return 8; // moderate
+  return RATE_LIMIT_BASE_MAX; // normal
+}
+
+function rateLimit(req: NextRequest, currentSize: number): NextResponse | null {
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   const now = Date.now();
   const current = ipToRequests.get(ip);
+  const dynamicMax = getDynamicRateLimitMax(currentSize);
   if (!current || now > current.resetAt) {
     ipToRequests.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
     return null;
   }
-  if (current.count >= RATE_LIMIT_MAX) {
+  if (current.count >= dynamicMax) {
     const retryAfterSec = Math.ceil((current.resetAt - now) / 1000);
     return new NextResponse("Rate limit exceeded", {
       status: 429,
@@ -42,7 +81,9 @@ function rateLimit(req: NextRequest): NextResponse | null {
 }
 
 export async function POST(req: NextRequest) {
-  const rl = rateLimit(req);
+  // Evaluate count before applying dynamic RL and capacity guard
+  const currentSize = await getWaitlistCount();
+  const rl = rateLimit(req, currentSize);
   if (rl) return rl;
 
   // Require authenticated Twitter session
@@ -86,6 +127,14 @@ export async function POST(req: NextRequest) {
 
   // Enforce unique wallet and unique profile position with upsert-like logic
   try {
+    // Capacity guardrail
+    if (currentSize >= MAX_WAITLIST_CAPACITY) {
+      return NextResponse.json(
+        { error: "Waitlist is currently full. Please try again later." },
+        { status: 429 }
+      );
+    }
+
     // Hard stop if this Twitter user already joined once
     const { data: existingByTwitter } = await supabase
       .from("waitlist_entries")
@@ -149,6 +198,8 @@ export async function POST(req: NextRequest) {
       .select()
       .single();
     if (error) throw error;
+    // Invalidate count cache on successful insert
+    cachedCount = null;
     return NextResponse.json(data, { status: 201 });
   } catch (err) {
     console.error("/api/waitlist error", err);
@@ -157,4 +208,22 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Lightweight stats endpoint for client optimization and observability
+export async function GET() {
+  if (!supabase) {
+    return NextResponse.json(
+      { error: "Database is not configured" },
+      { status: 500 }
+    );
+  }
+
+  const size = await getWaitlistCount();
+  const tier = getDynamicRateLimitMax(size);
+  return NextResponse.json({
+    size,
+    capacity: MAX_WAITLIST_CAPACITY,
+    rateLimitPerMinute: tier,
+  });
 }

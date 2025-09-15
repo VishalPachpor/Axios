@@ -46,7 +46,7 @@ export default function Footer() {
 
           {/* Right - Navigation Links and Social */}
           <div className="flex items-center space-x-3 sm:space-x-6">
-            <Link
+            {/* <Link
               href="/lend"
               className="text-sm text-muted-foreground hover:text-primary transition-colors"
             >
@@ -63,7 +63,7 @@ export default function Footer() {
               className="text-sm text-muted-foreground hover:text-primary transition-colors"
             >
               Earn
-            </Link>
+            </Link> */}
             <Link
               href="https://x.com/Axios_finance"
               target="_blank"

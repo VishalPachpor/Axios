@@ -4,6 +4,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { WaitlistEntry } from "@/lib/waitlist-service";
 
+// Configurable number of render spots on the globe (clamped 200..300)
+const CONFIGURED_SPOTS = Number(
+  process.env.NEXT_PUBLIC_WAITLIST_MAX_SPOTS || 250
+);
+const MAX_SPOTS = Math.max(
+  200,
+  Math.min(300, isFinite(CONFIGURED_SPOTS) ? CONFIGURED_SPOTS : 250)
+);
+
 export type TooltipState = {
   visible: boolean;
   content: string;
@@ -63,7 +72,7 @@ export function useThreeGlobe(
     y: 0,
   });
 
-  const profileData = useMemo(() => generateProfileData(150), []);
+  const profileData = useMemo(() => generateProfileData(MAX_SPOTS), []);
 
   const stateRef = useRef({
     isDragging: false,
@@ -94,6 +103,7 @@ export function useThreeGlobe(
     lastTooltipTime: 0,
     // Click debounce for mobile
     lastClickTime: 0,
+    lodFrame: 0,
   }).current;
 
   // Helper: create circular emoji texture on a mesh
@@ -199,7 +209,7 @@ export function useThreeGlobe(
             side: THREE.DoubleSide,
           });
 
-          // Add a subtle ring around the avatar for emphasis
+          // Remove any existing ring and do not add new rings
           const existingRing = targetMesh.getObjectByName(
             "pfp-ring"
           ) as THREE.Mesh | null;
@@ -208,21 +218,6 @@ export function useThreeGlobe(
             existingRing.geometry.dispose();
             (existingRing.material as THREE.Material).dispose();
           }
-          const ringGeometry = new THREE.RingGeometry(20.5, 22, 64);
-          const ringMaterial = new THREE.MeshBasicMaterial({
-            color: 0xffffff,
-            transparent: true,
-            opacity: 0.6,
-            side: THREE.DoubleSide,
-            polygonOffset: true,
-            polygonOffsetFactor: -2,
-            polygonOffsetUnits: -2,
-            depthWrite: true,
-          });
-          const ringMesh = new THREE.Mesh(ringGeometry, ringMaterial);
-          ringMesh.name = "pfp-ring";
-          ringMesh.renderOrder = 2;
-          targetMesh.add(ringMesh);
         }
       };
 
@@ -309,7 +304,8 @@ export function useThreeGlobe(
       const x = radius * Math.sin(phi) * Math.cos(theta);
       const y = radius * Math.sin(phi) * Math.sin(theta);
       const z = radius * Math.cos(phi);
-      const geometry = new THREE.CircleGeometry(20, 32);
+      // Increase base avatar size and smoothness
+      const geometry = new THREE.CircleGeometry(16, 24);
       const material = new THREE.MeshBasicMaterial({
         color: profile.color,
         transparent: true,
@@ -757,6 +753,37 @@ export function useThreeGlobe(
     window.addEventListener("resize", handleResize);
     window.addEventListener("touchstart", handleGlobalTouch, { passive: true });
 
+    // Keep full sphere visible and use a constant scale for all circles
+    const CONSTANT_SCALE = 1.2;
+    const CULL_DOT_THRESHOLD = -1.0; // include entire sphere [-1..1]
+    const updateLOD = () => {
+      if (!stateRef.camera || !stateRef.globeGroup) return;
+      // Only update every few frames to reduce CPU
+      stateRef.lodFrame = (stateRef.lodFrame + 1) % 4;
+      if (stateRef.lodFrame !== 0) return;
+      const cameraDir = stateRef.camera.position.clone().normalize();
+      for (let i = 0; i < stateRef.profileMeshes.length; i++) {
+        const mesh = stateRef.profileMeshes[i];
+        const normal = mesh.position.clone().normalize();
+        const dot = normal.dot(cameraDir); // [-1,1]
+        mesh.visible = true;
+        // Fixed size for every circle
+        mesh.scale.setScalar(CONSTANT_SCALE);
+        const mat = mesh.material as THREE.MeshBasicMaterial;
+        if (mat) {
+          mat.opacity = 1.0; // full opacity
+          mat.transparent = true;
+        }
+        // Ensure no ring remains
+        const ring = mesh.getObjectByName("pfp-ring") as THREE.Mesh | null;
+        if (ring) {
+          mesh.remove(ring);
+          ring.geometry.dispose();
+          (ring.material as THREE.Material).dispose();
+        }
+      }
+    };
+
     // Animation
     let animationFrameId: number;
     const animate = () => {
@@ -772,6 +799,7 @@ export function useThreeGlobe(
         stateRef.globeGroup.rotation.x = stateRef.currentRotationX;
         stateRef.globeGroup.rotation.y = stateRef.currentRotationY;
       }
+      updateLOD();
       if (stateRef.particleSystem && stateRef.globeGroup && stateRef.camera) {
         // @ts-expect-error uniforms typed loosely
         stateRef.particleSystem.material.uniforms.time.value =

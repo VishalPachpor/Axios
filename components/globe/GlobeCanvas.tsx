@@ -226,9 +226,16 @@ const GlobeCanvas: React.FC = () => {
                   setWaitlistError("You have already joined the waitlist.");
                   return;
                 }
-                // Pick the first available spot from 1..150
+                const configured = Number(
+                  process.env.NEXT_PUBLIC_WAITLIST_MAX_SPOTS || 250
+                );
+                const MAX_SPOTS = Math.max(
+                  200,
+                  Math.min(300, isFinite(configured) ? configured : 250)
+                );
+                // Pick the first available spot from 1..MAX_SPOTS
                 let chosen: number | null = null;
-                for (let i = 1; i <= 150; i++) {
+                for (let i = 1; i <= MAX_SPOTS; i++) {
                   if (!waitlistEntries.has(i)) {
                     chosen = i;
                     break;
