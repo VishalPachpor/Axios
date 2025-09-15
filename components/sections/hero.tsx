@@ -7,7 +7,7 @@ import { ArrowRight, Shield, Zap, Users } from "lucide-react";
 export default function HeroSection() {
   return (
     <section
-      className="relative pt-24 pb-20 md:pt-32 md:pb-24 lg:pt-40 lg:pb-32 min-h-screen flex items-center justify-center px-4 md:px-6 overflow-hidden"
+      className="relative pt-24 pb-8 md:pt-32 md:pb-10 lg:pt-40 lg:pb-12 min-h-[calc(100vh-64px)] flex items-center justify-center px-4 md:px-6 overflow-hidden"
       style={{
         background: `radial-gradient(circle, rgba(255,255,255,0.15) 2px, transparent 1px)`,
         backgroundSize: "50px 50px",

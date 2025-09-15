@@ -83,7 +83,7 @@ function useLogoColor() {
 export default function Header() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { logoColor, isScrolled } = useLogoColor();
+  const { logoColor } = useLogoColor();
   const isMobile = useIsMobile();
 
   const toggleMobileMenu = () => {
@@ -95,13 +95,7 @@ export default function Header() {
   };
 
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-50 px-6 py-4 transition-all duration-300 ${
-        isScrolled
-          ? "bg-background/80 backdrop-blur-md border-b border-border/20"
-          : ""
-      }`}
-    >
+    <header className="fixed top-0 left-0 right-0 z-50 px-6 py-4 transition-all duration-300 bg-transparent">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-6 relative">
         {/* Brand */}
         <Link
@@ -221,7 +215,6 @@ export default function Header() {
           <div className="px-6 py-6">
             {/* Mobile navigation - simple list without rounded backgrounds */}
             <div className="flex flex-col space-y-2">
-              
               {/* <Link
                 href="/lend"
                 onClick={closeMobileMenu}
