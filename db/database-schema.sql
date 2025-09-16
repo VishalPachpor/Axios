@@ -9,7 +9,7 @@ create table if not exists waitlist_entries (
   id uuid primary key default gen_random_uuid(),
   profile_id integer not null unique,
   name varchar(255) not null,
-  wallet_address varchar(42) not null unique,
+  wallet_address varchar(70) not null unique,
   avatar text not null,
   avatar_type varchar(12) not null,
   -- Twitter identity for uniqueness constraints

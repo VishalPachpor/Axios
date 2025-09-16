@@ -18,10 +18,10 @@ export function isValidEthereumAddress(address: string): boolean {
 }
 
 /**
- * Validates Fuel address format (fuel1 + 63 base32 characters)
+ * Validates Fuel address format (fuel1 + 58 base32 characters = 63 total)
  */
 export function isValidFuelAddress(address: string): boolean {
-  return /^fuel1[a-z0-9]{63}$/.test(address.trim());
+  return /^fuel1[a-z0-9]{58}$/.test(address.trim());
 }
 
 /**
@@ -69,8 +69,8 @@ export function getAddressErrorMessage(address: string): string {
     return "Invalid Ethereum address format (should be 42 characters)";
   }
 
-  if (trimmedAddress.startsWith("fuel1") && trimmedAddress.length !== 67) {
-    return "Invalid Fuel address format (should be 67 characters)";
+  if (trimmedAddress.startsWith("fuel1") && trimmedAddress.length !== 63) {
+    return "Invalid Fuel address format (should be 63 characters)";
   }
 
   return "Invalid wallet address format. Please enter a valid Ethereum (0x...) or Fuel (fuel1...) address";
