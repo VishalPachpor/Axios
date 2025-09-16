@@ -14,6 +14,12 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  validateWalletAddress,
+  getAddressErrorMessage,
+  getAddressPlaceholder,
+  getAddressHelpText,
+} from "@/lib/address-validation";
 // Avatar is sourced from Twitter profile after sign-in
 
 interface WaitlistFormData {
@@ -56,7 +62,8 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
   // Disable submit until all required inputs are valid
   const canSubmit = (() => {
     const nameOk = name.trim().length > 0;
-    const walletOk = /^0x[a-fA-F0-9]{40}$/.test(walletAddress.trim());
+    const walletValidation = validateWalletAddress(walletAddress);
+    const walletOk = walletValidation.isValid;
     const avatarOk = !!uploadedImage; // Require Twitter avatar
     return nameOk && walletOk && avatarOk;
   })();
@@ -94,10 +101,9 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
       newErrors.name = "Name is required";
     }
 
-    if (!walletAddress.trim()) {
-      newErrors.wallet = "Wallet address is required";
-    } else if (!/^0x[a-fA-F0-9]{40}$/.test(walletAddress.trim())) {
-      newErrors.wallet = "Invalid wallet address format";
+    const walletValidation = validateWalletAddress(walletAddress);
+    if (!walletValidation.isValid) {
+      newErrors.wallet = getAddressErrorMessage(walletAddress);
     }
 
     setErrors(newErrors);
@@ -116,9 +122,10 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
         alert("Please sign in with X to use your profile photo");
         return;
       }
+      const walletValidation = validateWalletAddress(walletAddress);
       const entry: WaitlistFormData = {
         name: name.trim(),
-        walletAddress: walletAddress.trim(),
+        walletAddress: walletValidation.normalizedAddress,
         avatar: uploadedImage,
         avatarType: "upload", // Use Twitter image URL as upload type
       };
@@ -184,9 +191,7 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
               </>
             ) : (
               <div className="w-full flex items-center justify-between gap-2">
-                <span className="text-sm text-white/80">
-                  Connect X handle
-                </span>
+                <span className="text-sm text-white/80">Connect X handle</span>
                 <Button
                   type="button"
                   variant="outline"
@@ -227,15 +232,15 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
               <Input
                 id="wallet"
                 type="text"
-                placeholder="0x..."
+                placeholder={getAddressPlaceholder()}
                 value={walletAddress}
                 onChange={(e) => setWalletAddress(e.target.value)}
                 required
-                pattern="^0x[a-fA-F0-9]{40}$"
                 className={`bg-white/10 border-white/20 text-white placeholder-white/50 backdrop-blur-sm focus:border-orange-500 focus:bg-white/20 transition-all font-mono text-sm ${
                   errors.wallet ? "border-red-400" : ""
                 }`}
               />
+              <p className="text-xs text-white/60">{getAddressHelpText()}</p>
               {errors.wallet && (
                 <p className="text-red-400 text-sm">{errors.wallet}</p>
               )}

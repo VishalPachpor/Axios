@@ -3,6 +3,7 @@ import { z } from "zod";
 import { supabase } from "@/lib/supabase";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { validateWalletAddress } from "@/lib/address-validation";
 
 // Simple in-memory rate limiter (per process). For production, use KV/Upstash.
 const RATE_LIMIT_WINDOW_MS = 60_000;
@@ -43,9 +44,10 @@ async function getWaitlistCount(): Promise<number> {
 
 const payloadSchema = z.object({
   name: z.string().min(1).max(255),
-  walletAddress: z
-    .string()
-    .regex(/^0x[a-fA-F0-9]{40}$/i, "Invalid wallet address format"),
+  walletAddress: z.string().refine((address) => {
+    const validation = validateWalletAddress(address);
+    return validation.isValid;
+  }, "Invalid wallet address format. Please enter a valid Ethereum (0x...) or Fuel (fuel1...) address"),
   avatar: z.string().min(1),
   avatarType: z.enum(["upload", "avatar_seed"]),
   avatarSeed: z.string().optional(),
@@ -110,13 +112,17 @@ export async function POST(req: NextRequest) {
   }
   const {
     name,
-    walletAddress,
+    walletAddress: rawWalletAddress,
     avatar,
     avatarType,
     avatarSeed,
     avatarStyle,
     profileId,
   } = parse.data;
+
+  // Normalize the wallet address
+  const walletValidation = validateWalletAddress(rawWalletAddress);
+  const walletAddress = walletValidation.normalizedAddress;
 
   if (!supabase) {
     return NextResponse.json(
