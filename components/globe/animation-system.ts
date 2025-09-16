@@ -86,6 +86,41 @@ export const createAnimationLoop = (
 
       updateLOD();
 
+      // Add floating motion to profile meshes (after LOD to avoid conflicts)
+      const time = Date.now() * 0.001;
+      stateRef.current.profileMeshes.forEach((mesh, index) => {
+        // Create individual floating motion for each circle
+        const floatSpeed = 0.8 + (index % 3) * 0.3; // Increased speed for more visible movement
+        const floatAmplitude = 5 + (index % 2) * 2; // Increased amplitude for more visible movement
+        const phase = (index * 0.1) % (Math.PI * 2); // Offset phase for each circle
+
+        // Calculate floating offset
+        const floatOffset =
+          Math.sin(time * floatSpeed + phase) * floatAmplitude;
+
+        // Apply floating motion to the mesh position
+        const originalPosition =
+          mesh.userData.originalPosition || mesh.position.clone();
+        mesh.userData.originalPosition = originalPosition;
+
+        // Move the mesh slightly outward and add floating motion
+        const normalizedPos = originalPosition.clone().normalize();
+        const newPosition = normalizedPos.multiplyScalar(
+          GLOBE_CONFIG.SPHERE.RADIUS + floatOffset
+        );
+        mesh.position.copy(newPosition);
+
+        // Debug logging for first few meshes
+        if (index < 3 && Math.floor(time * 10) % 10 === 0) {
+          console.log(
+            `Mesh ${index} floating:`,
+            floatOffset.toFixed(2),
+            "position:",
+            newPosition.length().toFixed(2)
+          );
+        }
+      });
+
       if (
         stateRef.current.particleSystem &&
         stateRef.current.globeGroup &&
