@@ -192,10 +192,10 @@ export default function Header() {
           </div>
 
           {/* Wallet button - always visible */}
-          <WalletAction />
+          {/* <WalletAction /> */}
 
           {/* Mobile menu button - only on mobile */}
-          <button
+          {/* <button
             onClick={toggleMobileMenu}
             className="md:hidden p-2 text-foreground hover:text-primary transition-colors"
             aria-label="Toggle mobile menu"
@@ -205,7 +205,7 @@ export default function Header() {
             ) : (
               <Menu className="h-6 w-6" />
             )}
-          </button>
+          </button> */}
         </div>
       </div>
 
