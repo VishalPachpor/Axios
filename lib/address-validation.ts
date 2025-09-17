@@ -18,10 +18,19 @@ export function isValidEthereumAddress(address: string): boolean {
 }
 
 /**
- * Validates Fuel address format (fuel1 + 58 base32 characters = 63 total)
+ * Validates Fuel address format
+ * Supports both Bech32 format (fuel1...) and B256 format (0x...)
  */
 export function isValidFuelAddress(address: string): boolean {
-  return /^fuel1[a-z0-9]{58}$/.test(address.trim());
+  const trimmedAddress = address.trim();
+
+  // Bech32 format: fuel1 + 58 base32 characters = 63 total
+  const bech32Format = /^fuel1[a-z0-9]{58}$/.test(trimmedAddress);
+
+  // B256 format: 0x + 64 hex characters = 66 total
+  const b256Format = /^0x[a-fA-F0-9]{64}$/.test(trimmedAddress);
+
+  return bech32Format || b256Format;
 }
 
 /**
@@ -65,15 +74,19 @@ export function getAddressErrorMessage(address: string): string {
     return "Wallet address is required";
   }
 
-  if (trimmedAddress.startsWith("0x") && trimmedAddress.length !== 42) {
-    return "Invalid Ethereum address format (should be 42 characters)";
+  if (
+    trimmedAddress.startsWith("0x") &&
+    trimmedAddress.length !== 42 &&
+    trimmedAddress.length !== 66
+  ) {
+    return "Invalid address format (Ethereum: 42 chars, Fuel B256: 66 chars)";
   }
 
   if (trimmedAddress.startsWith("fuel1") && trimmedAddress.length !== 63) {
     return "Invalid Fuel address format (should be 63 characters)";
   }
 
-  return "Invalid wallet address format. Please enter a valid Ethereum (0x...) or Fuel (fuel1...) address";
+  return "Invalid wallet address format. Please enter a valid Ethereum (0x...), Fuel Bech32 (fuel1...), or Fuel B256 (0x...) address";
 }
 
 /**
@@ -87,5 +100,5 @@ export function getAddressPlaceholder(): string {
  * Gets help text for address input
  */
 export function getAddressHelpText(): string {
-  return "Enter your Ethereum (0x...) or Fuel (fuel1...) wallet address";
+  return "Enter your Ethereum (0x...), Fuel Bech32 (fuel1...), or Fuel B256 (0x...) wallet address";
 }
