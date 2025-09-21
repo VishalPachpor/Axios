@@ -1,9 +1,9 @@
 // Globe configuration constants
 export const GLOBE_CONFIG = {
-  // Entry limits
+  // Entry limits - Now truly dynamic
   CONFIGURED_SPOTS: Number(process.env.NEXT_PUBLIC_WAITLIST_MAX_SPOTS || 1000),
   MIN_SPOTS: 200,
-  MAX_SPOTS_LIMIT: 1000,
+  MAX_SPOTS_LIMIT: 10000, // Increased to support scaling to 1000+
 
   // Circle sizing
   CIRCLE_SIZES: {
@@ -71,7 +71,7 @@ export const GLOBE_CONFIG = {
   },
 } as const;
 
-// Calculate MAX_SPOTS with validation
+// Calculate MAX_SPOTS with validation - Now truly dynamic
 export const MAX_SPOTS = Math.max(
   GLOBE_CONFIG.MIN_SPOTS,
   Math.min(

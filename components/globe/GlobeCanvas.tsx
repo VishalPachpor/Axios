@@ -6,6 +6,7 @@ import WaitlistPopup from "@/components/waitlist/waitlist-popup";
 import waitlistService, { WaitlistEntry } from "@/lib/waitlist-service";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
+import { MAX_SPOTS } from "@/components/globe/constants";
 
 const GlobeCanvas: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -296,7 +297,7 @@ const GlobeCanvas: React.FC = () => {
 
       {/* Join Waitlist Button - bottom center with glowing border (shows only after loading) */}
       {!loading && (
-        <div className="absolute inset-x-0 bottom-20 md:bottom-8 z-[1100] flex justify-center px-4 pointer-events-none">
+        <div className="absolute inset-x-0 bottom-18 md:bottom-8 z-[1100] flex justify-center px-4 pointer-events-none">
           <div className="relative group pointer-events-auto">
             <div className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-orange-500 via-orange-400 to-amber-500 blur opacity-70 group-hover:opacity-100 transition duration-300" />
             <Button
@@ -305,13 +306,7 @@ const GlobeCanvas: React.FC = () => {
                   setWaitlistError("You have already joined the waitlist.");
                   return;
                 }
-                const configured = Number(
-                  process.env.NEXT_PUBLIC_WAITLIST_MAX_SPOTS || 250
-                );
-                const MAX_SPOTS = Math.max(
-                  200,
-                  Math.min(300, isFinite(configured) ? configured : 250)
-                );
+                // Use dynamic MAX_SPOTS from constants (respects NEXT_PUBLIC_WAITLIST_MAX_SPOTS)
                 // Pick the first available spot from 1..MAX_SPOTS
                 let chosen: number | null = null;
                 for (let i = 1; i <= MAX_SPOTS; i++) {
