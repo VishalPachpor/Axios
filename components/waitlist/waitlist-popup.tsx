@@ -64,8 +64,8 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
     const nameOk = name.trim().length > 0;
     const walletValidation = validateWalletAddress(walletAddress);
     const walletOk = walletValidation.isValid;
-    const avatarOk = !!uploadedImage; // Require Twitter avatar
-    return nameOk && walletOk && avatarOk;
+    const authOk = isAuthenticated && !!uploadedImage; // Require Twitter authentication and avatar
+    return nameOk && walletOk && authOk;
   })();
 
   // Remove random avatar generation - only Twitter avatar is used
@@ -115,13 +115,14 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
 
     if (!validateForm()) return;
 
+    if (!isAuthenticated || !uploadedImage) {
+      setErrors({ name: "Please sign in with X to continue" });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      if (!uploadedImage) {
-        alert("Please sign in with X to use your profile photo");
-        return;
-      }
       const walletValidation = validateWalletAddress(walletAddress);
       const entry: WaitlistFormData = {
         name: name.trim(),
@@ -138,7 +139,10 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
       setUploadedImage(null);
       setErrors({});
     } catch (error) {
-      // Silently handle error - user will see form validation errors
+      // Provide user feedback for errors
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to join waitlist";
+      setErrors({ name: errorMessage });
     } finally {
       setIsSubmitting(false);
     }
@@ -277,8 +281,19 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
               disabled={isSubmitting || !canSubmit}
               className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-500/50 text-white font-semibold py-1.5 sm:py-2 text-sm sm:text-base backdrop-blur-sm border border-orange-500/50 shadow-lg transition-all"
             >
-              {isSubmitting ? "Joining..." : "Join Waitlist"}
+              {isSubmitting
+                ? "Joining..."
+                : !isAuthenticated
+                ? "Sign in with X to Join"
+                : "Join Waitlist"}
             </Button>
+
+            {/* Help text for authentication requirement */}
+            {!isAuthenticated && (
+              <div className="text-center text-xs text-white/60 mt-2">
+                You must sign in with X to join the waitlist
+              </div>
+            )}
           </form>
         </div>
       </DialogContent>
