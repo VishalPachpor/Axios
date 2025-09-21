@@ -1,12 +1,12 @@
 import * as THREE from "three";
 
 /**
- * Create circular emoji texture on a mesh
+ * Create circular emoji texture on a mesh with optimized size
  */
 export const createEmojiTexture = (emoji: string, mesh: THREE.Mesh): void => {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
-  const size = 256;
+  const size = 128; // Reduced from 256 to 128 for better performance
   canvas.width = size;
   canvas.height = size;
 
@@ -41,7 +41,7 @@ export const createEmojiTexture = (emoji: string, mesh: THREE.Mesh): void => {
 };
 
 /**
- * Set texture from image on mesh with circular clipping
+ * Set texture from image on mesh with circular clipping and optimized size
  */
 export const setTextureFromImage = (
   img: HTMLImageElement,
@@ -49,7 +49,7 @@ export const setTextureFromImage = (
 ): void => {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
-  const size = 256;
+  const size = 128; // Reduced from 256 to 128 for better performance
   canvas.width = size;
   canvas.height = size;
 

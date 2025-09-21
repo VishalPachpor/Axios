@@ -25,6 +25,8 @@ export const GLOBE_CONFIG = {
     LOD_UPDATE_FREQUENCY_HIGH: 6,
     BATCH_SIZE: 50,
     BATCH_DIVISOR: 10,
+    MOBILE_FALLBACK: true, // Enable static fallback on mobile
+    REDUCED_PARTICLES_MOBILE: 150, // Even fewer particles on mobile
   },
 
   // Camera settings
@@ -62,9 +64,9 @@ export const GLOBE_CONFIG = {
 
   // Starfield settings
   STARFIELD: {
-    PARTICLE_COUNT: 550,
+    PARTICLE_COUNT: 300, // Reduced from 550 for better performance
     SKY_RADIUS: 2000,
-    NUM_CLUSTERS: 18,
+    NUM_CLUSTERS: 12, // Reduced from 18
     CLUSTER_STAR_RATIO: 0.55,
   },
 } as const;

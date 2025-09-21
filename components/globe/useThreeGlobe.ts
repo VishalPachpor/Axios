@@ -39,7 +39,11 @@ import {
 
 export function useThreeGlobe(
   waitlistEntries: Map<number, WaitlistEntry>,
-  { onEmptySpotClick, getEntryByProfileId }: UseThreeGlobeOptions
+  {
+    onEmptySpotClick,
+    getEntryByProfileId,
+    enabled = true,
+  }: UseThreeGlobeOptions
 ) {
   const mountRef = useRef<HTMLDivElement>(null);
 
@@ -165,7 +169,7 @@ export function useThreeGlobe(
 
   // Main effect - now much cleaner and shorter!
   useEffect(() => {
-    if (!mountRef.current) return;
+    if (!mountRef.current || !enabled) return;
 
     // Progress simulation
     const progressInterval = setInterval(() => {
@@ -351,7 +355,7 @@ export function useThreeGlobe(
         });
       }
     };
-  }, [profileData]);
+  }, [profileData, enabled]);
 
   return {
     mountRef,

@@ -18,6 +18,7 @@ const GlobeCanvas: React.FC = () => {
     Map<number, WaitlistEntry>
   >(new Map());
   const [alreadyJoined, setAlreadyJoined] = useState<boolean>(false);
+  const [isGlobeVisible, setIsGlobeVisible] = useState(false);
 
   const getEntryByProfileId = useMemo(
     () => (id: number) => waitlistEntries.get(id),
@@ -36,6 +37,7 @@ const GlobeCanvas: React.FC = () => {
         setWaitlistError(null);
       },
       getEntryByProfileId,
+      enabled: isGlobeVisible, // Only initialize when visible
     });
 
   const handleWaitlistSubmit = async (entryData: {
@@ -92,10 +94,41 @@ const GlobeCanvas: React.FC = () => {
   useEffect(() => {
     const loadEntries = async () => {
       try {
+        // Check cache first
+        const cacheKey = "waitlist_entries_cache";
+        const cachedData = localStorage.getItem(cacheKey);
+        const cacheTimestamp = localStorage.getItem(cacheKey + "_timestamp");
+
+        // Use cached data if less than 5 minutes old
+        if (cachedData && cacheTimestamp) {
+          const age = Date.now() - parseInt(cacheTimestamp);
+          if (age < 5 * 60 * 1000) {
+            // 5 minutes
+            const entries = JSON.parse(cachedData);
+            const entriesMap = new Map<number, WaitlistEntry>();
+            entries.forEach((entry: WaitlistEntry) => {
+              entriesMap.set(entry.profileId, entry);
+            });
+            setWaitlistEntries(entriesMap);
+            setIsGlobeVisible(true);
+            return;
+          }
+        }
+
+        // Delay loading to reduce initial data transfer
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
         const allEntries = await waitlistService.getAllEntries();
         const entriesMap = new Map<number, WaitlistEntry>();
         allEntries.forEach((entry) => entriesMap.set(entry.profileId, entry));
         setWaitlistEntries(entriesMap);
+
+        // Cache the data
+        localStorage.setItem(cacheKey, JSON.stringify(allEntries));
+        localStorage.setItem(cacheKey + "_timestamp", Date.now().toString());
+
+        setIsGlobeVisible(true);
+
         // Check current user status
         const res = await fetch("/api/waitlist/me", { cache: "no-store" });
         if (res.ok) {
@@ -104,6 +137,7 @@ const GlobeCanvas: React.FC = () => {
         }
       } catch (error) {
         console.error("Failed to load waitlist entries:", error);
+        setIsGlobeVisible(true); // Show globe even if data loading fails
       }
     };
     loadEntries();
@@ -121,6 +155,51 @@ const GlobeCanvas: React.FC = () => {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden font-sans">
+      {!isGlobeVisible && (
+        <div className="absolute inset-0 bg-black flex flex-col items-center justify-center z-[1000] px-4">
+          <div className="mb-8 md:mb-12">
+            <div className="flex items-center space-x-2 md:space-x-3">
+              <svg
+                width="48"
+                height="48"
+                viewBox="0 0 173 173"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-8 h-8 md:w-12 md:h-12"
+              >
+                <path
+                  d="M87.8752 75.3753L50.8259 38.326L39.6267 49.5252L76.4744 86.3729L39.6267 123.221L49.9753 133.569L87.8752 95.6693L125.775 133.569L136.124 123.221L99.276 86.3729L136.124 49.5252L124.924 38.326L87.8752 75.3753Z"
+                  fill="#F97316"
+                />
+                <path
+                  d="M59.096 29.3139L87.8752 0.534729L116.654 29.3139L87.8752 58.0931L59.096 29.3139Z"
+                  fill="#F97316"
+                />
+                <path
+                  d="M115.292 86.5213L144.072 57.7421L172.851 86.5213L144.072 115.3L115.292 86.5213Z"
+                  fill="#F97316"
+                />
+                <path
+                  d="M0.467819 86.5213L29.247 57.7421L58.0262 86.5213L29.247 115.3L0.467819 86.5213Z"
+                  fill="#F97316"
+                />
+                <path
+                  d="M59.096 143.506L68.6725 133.929L88.3285 152.348L97.7593 142.694L88.1019 133.15L87.8752 114.727L116.654 143.506L87.8752 172.285L59.096 143.506Z"
+                  fill="#F97316"
+                />
+              </svg>
+              <span className="text-white text-2xl md:text-3xl font-bold tracking-wide">
+                AXIOS
+              </span>
+            </div>
+          </div>
+          <div className="text-white text-center">
+            <div className="animate-spin w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-lg">Loading waitlist...</p>
+          </div>
+        </div>
+      )}
+
       <div
         ref={mountRef}
         className="w-full h-full cursor-grab globe-container touch-optimized"
@@ -217,7 +296,7 @@ const GlobeCanvas: React.FC = () => {
 
       {/* Join Waitlist Button - bottom center with glowing border (shows only after loading) */}
       {!loading && (
-        <div className="absolute inset-x-0 bottom-6 md:bottom-8 z-[1100] flex justify-center px-4 pointer-events-none">
+        <div className="absolute inset-x-0 bottom-20 md:bottom-8 z-[1100] flex justify-center px-4 pointer-events-none">
           <div className="relative group pointer-events-auto">
             <div className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-orange-500 via-orange-400 to-amber-500 blur opacity-70 group-hover:opacity-100 transition duration-300" />
             <Button

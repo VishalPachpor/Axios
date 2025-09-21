@@ -11,6 +11,7 @@ export type TooltipState = {
 export type UseThreeGlobeOptions = {
   onEmptySpotClick: (profileId: number) => void;
   getEntryByProfileId: (profileId: number) => WaitlistEntry | undefined;
+  enabled?: boolean;
 };
 
 export type ProfileData = {
