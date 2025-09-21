@@ -144,16 +144,12 @@ export default function VaultDetail({ vault, onBack }: VaultDetailProps) {
 
   const handleDeposit = () => {
     if (!depositAmount) return;
-    console.log(
-      `Depositing ${depositAmount} ${vault.depositToken} into ${vault.name}`
-    );
+    // TODO: Implement deposit logic
   };
 
   const handleWithdraw = () => {
     if (!depositAmount) return;
-    console.log(
-      `Withdrawing ${depositAmount} ${vault.depositToken} from ${vault.name}`
-    );
+    // TODO: Implement withdraw logic
   };
 
   return (

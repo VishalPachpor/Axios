@@ -109,16 +109,6 @@ export const createAnimationLoop = (
           GLOBE_CONFIG.SPHERE.RADIUS + floatOffset
         );
         mesh.position.copy(newPosition);
-
-        // Debug logging for first few meshes
-        if (index < 3 && Math.floor(time * 10) % 10 === 0) {
-          console.log(
-            `Mesh ${index} floating:`,
-            floatOffset.toFixed(2),
-            "position:",
-            newPosition.length().toFixed(2)
-          );
-        }
       });
 
       if (

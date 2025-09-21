@@ -178,21 +178,11 @@ export default function LendExplorer() {
   }, [query]);
 
   const handleRequestLoan = () => {
-    // Handle loan request logic
-    console.log("Requesting loan:", {
-      collateral,
-      collateralToken,
-      interest,
-      lendToken,
-      lendAmount,
-      duration,
-      durationType,
-    });
+    // TODO: Implement loan request logic
   };
 
   const handleClaimBack = (loanId: string) => {
-    // Handle claim back logic
-    console.log("Claiming back loan:", loanId);
+    // TODO: Implement claim back logic
   };
 
   const toggleLoanExpansion = (loanId: string) => {

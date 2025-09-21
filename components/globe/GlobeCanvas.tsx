@@ -137,7 +137,7 @@ const GlobeCanvas: React.FC = () => {
           setAlreadyJoined(!!entry);
         }
       } catch (error) {
-        console.error("Failed to load waitlist entries:", error);
+        // Silently handle error and show globe anyway
         setIsGlobeVisible(true); // Show globe even if data loading fails
       }
     };
@@ -297,7 +297,7 @@ const GlobeCanvas: React.FC = () => {
 
       {/* Join Waitlist Button - bottom center with glowing border (shows only after loading) */}
       {!loading && (
-        <div className="absolute inset-x-0 bottom-18 md:bottom-8 z-[1100] flex justify-center px-4 pointer-events-none">
+        <div className="absolute inset-x-0 bottom-20 md:bottom-8 z-[1100] flex justify-center px-4 pointer-events-none">
           <div className="relative group pointer-events-auto">
             <div className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-orange-500 via-orange-400 to-amber-500 blur opacity-70 group-hover:opacity-100 transition duration-300" />
             <Button

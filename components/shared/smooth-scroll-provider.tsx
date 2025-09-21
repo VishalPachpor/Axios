@@ -46,7 +46,7 @@ export default function SmoothScrollProvider({
           window.removeEventListener("orientationchange", handleResize);
         };
       } catch (error) {
-        console.error("Failed to initialize Lenis:", error);
+        // Silently handle Lenis initialization errors
       }
     };
 

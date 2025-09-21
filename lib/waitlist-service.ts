@@ -135,10 +135,7 @@ class WaitlistService {
       if (error) throw error;
       return this.dbToApp(data);
     } catch (error) {
-      console.warn(
-        "Database operation failed, falling back to localStorage:",
-        error
-      );
+      // Fallback to localStorage silently
       return this.fallbackToLocalStorage(entry);
     }
   }
@@ -158,10 +155,7 @@ class WaitlistService {
       if (error && error.code !== "PGRST116") throw error;
       return data ? this.dbToApp(data) : null;
     } catch (error) {
-      console.warn(
-        "Database operation failed, falling back to localStorage:",
-        error
-      );
+      // Fallback to localStorage silently
       return this.getFromLocalStorage(walletAddress);
     }
   }
@@ -181,10 +175,7 @@ class WaitlistService {
       if (error && error.code !== "PGRST116") throw error;
       return data ? this.dbToApp(data) : null;
     } catch (error) {
-      console.warn(
-        "Database operation failed, falling back to localStorage:",
-        error
-      );
+      // Fallback to localStorage silently
       return this.getByProfileIdFromLocalStorage(profileId);
     }
   }
@@ -203,10 +194,7 @@ class WaitlistService {
       if (error) throw error;
       return (data || []).map((entry) => this.dbToApp(entry));
     } catch (error) {
-      console.warn(
-        "Database operation failed, falling back to localStorage:",
-        error
-      );
+      // Fallback to localStorage silently
       return this.getAllFromLocalStorage();
     }
   }
@@ -224,10 +212,7 @@ class WaitlistService {
 
       return !error;
     } catch (error) {
-      console.warn(
-        "Database operation failed, falling back to localStorage:",
-        error
-      );
+      // Fallback to localStorage silently
       return this.removeFromLocalStorage(walletAddress);
     }
   }
@@ -245,10 +230,7 @@ class WaitlistService {
       if (error) throw error;
       return count || 0;
     } catch (error) {
-      console.warn(
-        "Database operation failed, falling back to localStorage:",
-        error
-      );
+      // Fallback to localStorage silently
       return this.getSizeFromLocalStorage();
     }
   }
@@ -267,10 +249,7 @@ class WaitlistService {
 
       if (error) throw error;
     } catch (error) {
-      console.warn(
-        "Database operation failed, falling back to localStorage:",
-        error
-      );
+      // Fallback to localStorage silently
       this.clearLocalStorage();
     }
   }
@@ -286,7 +265,7 @@ class WaitlistService {
         return new Map(entries.map((entry) => [entry.walletAddress, entry]));
       }
     } catch (error) {
-      console.error("Failed to load waitlist entries from storage:", error);
+      // Silently handle localStorage errors
     }
     return new Map();
   }
@@ -298,7 +277,7 @@ class WaitlistService {
       const entriesArray = Array.from(entries.values());
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(entriesArray));
     } catch (error) {
-      console.error("Failed to save waitlist entries to storage:", error);
+      // Silently handle localStorage errors
     }
   }
 

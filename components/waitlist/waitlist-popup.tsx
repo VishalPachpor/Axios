@@ -138,7 +138,7 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
       setUploadedImage(null);
       setErrors({});
     } catch (error) {
-      console.error("Error submitting waitlist entry:", error);
+      // Silently handle error - user will see form validation errors
     } finally {
       setIsSubmitting(false);
     }

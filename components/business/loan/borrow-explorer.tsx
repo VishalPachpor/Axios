@@ -164,16 +164,7 @@ export default function BorrowExplorer() {
       !duration
     )
       return;
-    // For now, just log the request since we're showing zeroed data
-    console.log("Loan request:", {
-      collateral,
-      collateralToken,
-      borrowToken,
-      borrowAmount,
-      interest,
-      duration,
-      durationType,
-    });
+    // TODO: Implement loan request logic
     setCollateral("");
     setCollateralToken("USDC");
     setBorrowToken("USDC");
@@ -184,8 +175,7 @@ export default function BorrowExplorer() {
   };
 
   const handleClaimBack = (loanId: string) => {
-    // For now, just log the claim since we're showing zeroed data
-    console.log("Claiming back loan:", loanId);
+    // TODO: Implement claim back logic
   };
 
   // Helper to check if loan expired (for demo, expired if duration passed since createdAt)
