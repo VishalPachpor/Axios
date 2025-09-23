@@ -146,7 +146,22 @@ export function useThreeGlobe(
     const isDataImage =
       typeof entry.avatar === "string" && entry.avatar.startsWith("data:");
 
-    if (isHttpImage) {
+    // Support DiceBear avatars when avatarType is 'avatar_seed'
+    if (entry.avatarType === "avatar_seed") {
+      const style =
+        (entry.avatarStyle && entry.avatarStyle.trim()) || "adventurer";
+      const seed =
+        (entry.avatarSeed && entry.avatarSeed.toString()) ||
+        entry.profileId.toString();
+      const dicebearUrl = `https://api.dicebear.com/7.x/${encodeURIComponent(
+        style
+      )}/png?seed=${encodeURIComponent(seed)}&size=128&radius=50`;
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => setTextureFromImage(img, targetMesh);
+      img.onerror = () => createEmojiTexture("🎭", targetMesh);
+      img.src = dicebearUrl;
+    } else if (isHttpImage) {
       const img = new Image();
       img.crossOrigin = "anonymous";
       img.onload = () => setTextureFromImage(img, targetMesh);
@@ -266,9 +281,21 @@ export function useThreeGlobe(
         };
         const entryData = getEntryByProfileIdRef.current(profile.id);
         const content = entryData
-          ? `<strong>${
-              entryData.name?.startsWith("@") ? entryData.name : entryData.name
-            }</strong><br>Waitlist Member`
+          ? (() => {
+              const name = entryData.name?.startsWith("@")
+                ? entryData.name
+                : entryData.name;
+              const hasImage =
+                entryData.avatarType === "avatar_seed" ||
+                (typeof entryData.avatar === "string" &&
+                  (entryData.avatar.startsWith("https://") ||
+                    entryData.avatar.startsWith("http://") ||
+                    entryData.avatar.startsWith("data:")));
+              const badge = hasImage
+                ? ""
+                : ' <span style="display:inline-block;margin-left:6px;padding:2px 6px;border-radius:8px;background:#475569;color:#e2e8f0;font-size:10px;vertical-align:middle;">No PFP</span>';
+              return `<strong>${name}</strong>${badge}<br>Waitlist Member`;
+            })()
           : `<strong>Available Spot</strong><br><span style="color: #f97316;">Click to join waitlist</span>`;
 
         if (window.innerWidth > 768) {

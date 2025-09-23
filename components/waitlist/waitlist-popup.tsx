@@ -64,7 +64,7 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
     const nameOk = name.trim().length > 0;
     const walletValidation = validateWalletAddress(walletAddress);
     const walletOk = walletValidation.isValid;
-    const authOk = isAuthenticated && !!uploadedImage; // Require Twitter authentication and avatar
+    const authOk = isAuthenticated; // Only require authentication; avatar may be DiceBear
     return nameOk && walletOk && authOk;
   })();
 
@@ -115,7 +115,7 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
 
     if (!validateForm()) return;
 
-    if (!isAuthenticated || !uploadedImage) {
+    if (!isAuthenticated) {
       setErrors({ name: "Please sign in with X to continue" });
       return;
     }
@@ -124,12 +124,29 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
 
     try {
       const walletValidation = validateWalletAddress(walletAddress);
-      const entry: WaitlistFormData = {
-        name: name.trim(),
-        walletAddress: walletValidation.normalizedAddress,
-        avatar: uploadedImage,
-        avatarType: "upload", // Use Twitter image URL as upload type
-      };
+      // If user has a Twitter image, use it as upload; otherwise assign DiceBear
+      let entry: WaitlistFormData;
+      if (uploadedImage) {
+        entry = {
+          name: name.trim(),
+          walletAddress: walletValidation.normalizedAddress,
+          avatar: uploadedImage,
+          avatarType: "upload",
+        };
+      } else {
+        const seed =
+          (profileId ?? 0) > 0
+            ? String(profileId)
+            : walletValidation.normalizedAddress;
+        entry = {
+          name: name.trim(),
+          walletAddress: walletValidation.normalizedAddress,
+          avatar: seed, // store seed as avatar string (non-empty)
+          avatarType: "avatar_seed",
+          avatarSeed: seed,
+          avatarStyle: "adventurer",
+        };
+      }
 
       await onSubmit(entry);
 
@@ -250,27 +267,43 @@ const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
               )}
             </div>
 
-            {/* Avatar Preview (Twitter image) */}
+            {/* Avatar Preview (Twitter or DiceBear) */}
             <div className="space-y-2">
               <Label>Avatar</Label>
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-orange-500/70">
-                  {uploadedImage ? (
-                    <img
-                      src={uploadedImage}
-                      alt="Twitter avatar"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-white/10 flex items-center justify-center text-white/60 text-xs">
-                      No avatar
-                    </div>
-                  )}
+                  {(() => {
+                    if (uploadedImage) {
+                      return (
+                        <img
+                          src={uploadedImage}
+                          alt="Twitter avatar"
+                          className="w-full h-full object-cover"
+                        />
+                      );
+                    }
+                    const style = "adventurer";
+                    const seed =
+                      (profileId ?? 0) > 0
+                        ? String(profileId)
+                        : validateWalletAddress(walletAddress)
+                            .normalizedAddress || "axios";
+                    const dicebearUrl = `https://api.dicebear.com/7.x/${encodeURIComponent(
+                      style
+                    )}/png?seed=${encodeURIComponent(seed)}&size=128&radius=50`;
+                    return (
+                      <img
+                        src={dicebearUrl}
+                        alt="Generated avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    );
+                  })()}
                 </div>
                 <div className="text-xs text-white/70">
                   {uploadedImage
                     ? "Using your X profile photo"
-                    : "Sign in with X above to use your profile photo"}
+                    : "No X photo found — using a DiceBear avatar"}
                 </div>
               </div>
             </div>
