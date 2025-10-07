@@ -12,17 +12,17 @@ export default function HeroSection() {
       <div className="absolute inset-0 w-full h-full pointer-events-auto">
         <LiquidEther
           colors={["#5227FF", "#fa7214", "#ffac14"]}
-          mouseForce={15}
-          cursorSize={120}
+          mouseForce={18}
+          cursorSize={105}
           isViscous={false}
           viscous={25}
           iterationsViscous={24}
           iterationsPoisson={24}
-          resolution={0.7}
+          resolution={0.5}
           isBounce={false}
           autoDemo={true}
-          autoSpeed={0.3}
-          autoIntensity={1.8}
+          autoSpeed={0.6}
+          autoIntensity={2.2}
           takeoverDuration={0.4}
           autoResumeDelay={2000}
           autoRampDuration={0.8}
