@@ -9,23 +9,23 @@ export default function HeroSection() {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-black">
       {/* LiquidEther Background - Full screen coverage */}
-      <div className="absolute inset-0 w-full h-full">
+      <div className="absolute inset-0 w-full h-full pointer-events-auto">
         <LiquidEther
           colors={["#5227FF", "#fa7214", "#ffac14"]}
-          mouseForce={20}
-          cursorSize={100}
+          mouseForce={15}
+          cursorSize={120}
           isViscous={false}
-          viscous={30}
-          iterationsViscous={32}
-          iterationsPoisson={32}
-          resolution={0.5}
+          viscous={25}
+          iterationsViscous={24}
+          iterationsPoisson={24}
+          resolution={0.7}
           isBounce={false}
           autoDemo={true}
-          autoSpeed={0.5}
-          autoIntensity={2.2}
-          takeoverDuration={0.25}
-          autoResumeDelay={3000}
-          autoRampDuration={0.6}
+          autoSpeed={0.3}
+          autoIntensity={1.8}
+          takeoverDuration={0.4}
+          autoResumeDelay={2000}
+          autoRampDuration={0.8}
           style={{
             position: "absolute",
             top: 0,
@@ -38,7 +38,7 @@ export default function HeroSection() {
       </div>
 
       {/* Content Container */}
-      <div className="relative z-10 text-center max-w-6xl mx-auto w-full px-4 md:px-6">
+      <div className="relative z-10 text-center max-w-6xl mx-auto w-full px-4 md:px-6 pointer-events-none">
         {/* Main heading */}
         <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-light text-white mb-8 md:mb-10 leading-[0.85] tracking-tight">
           Fixed-Rate
@@ -54,7 +54,7 @@ export default function HeroSection() {
         </p>
 
         {/* Join Waitlist CTA Button */}
-        <div className="flex justify-center items-center mb-6 md:mb-10">
+        <div className="flex justify-center items-center mb-6 md:mb-10 pointer-events-auto">
           <Button
             asChild
             size="lg"

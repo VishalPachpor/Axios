@@ -141,8 +141,8 @@ export default function Header() {
 
         {/* Desktop navigation: Home / Lend / Borrow - Centered with segmented control effect */}
         <nav className="hidden md:flex items-center bg-transparent absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
-          <div className="px-2 py-3 gap-1 rounded-[100px] border border-white/[0.08] bg-[#0E0D0C] transition-all duration-300 shadow-lg">
-            {/* <Link
+          {/* <div className="px-2 py-3 gap-1 rounded-[100px] border border-white/[0.08] bg-[#0E0D0C] transition-all duration-300 shadow-lg">
+            <Link
               href="/lend"
               className={`px-4 py-2 rounded-[100px] text-sm font-medium transition-all duration-200 ${
                 pathname === "/lend"
@@ -171,8 +171,8 @@ export default function Header() {
               }`}
             >
               Earn
-            </Link> */}
-          </div>
+            </Link>
+          </div> */}
         </nav>
 
         {/* Right side: Desktop - Fuel Testnet and Wallet, Mobile - Only Wallet */}

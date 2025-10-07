@@ -138,11 +138,14 @@ export default function LiquidEther({
         this.renderer = new THREE.WebGLRenderer({
           antialias: true,
           alpha: true,
+          powerPreference: "high-performance",
+          preserveDrawingBuffer: false,
         });
         // Always transparent
         this.renderer.autoClear = false;
         this.renderer.setClearColor(new THREE.Color(0x000000), 0);
-        this.renderer.setPixelRatio(this.pixelRatio);
+        this.renderer.setPixelRatio(Math.min(this.pixelRatio, 2));
+        this.renderer.sortObjects = false;
         this.renderer.setSize(this.width, this.height);
         const el = this.renderer.domElement;
         el.style.width = "100%";
@@ -283,7 +286,8 @@ export default function LiquidEther({
             this.coords_old.copy(this.coords);
             this.diff.set(0, 0);
           } else {
-            const k = t * t * (3 - 2 * t);
+            // Smoother easing for takeover transition
+            const k = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
             this.coords.copy(this.takeoverFrom).lerp(this.takeoverTo, k);
           }
         }
@@ -362,10 +366,11 @@ export default function LiquidEther({
         this.mouse.isAutoActive = true;
         let dtSec = (now - this.lastTime) / 1000;
         this.lastTime = now;
-        if (dtSec > 0.2) dtSec = 0.016;
+        // Clamp delta time for smoother animation
+        if (dtSec > 0.1) dtSec = 0.016;
         const dir = this._tmpDir.subVectors(this.target, this.current);
         const dist = dir.length();
-        if (dist < 0.01) {
+        if (dist < 0.005) {
           this.pickNewTarget();
           return;
         }
@@ -376,7 +381,8 @@ export default function LiquidEther({
             1,
             (now - this.activationTime) / this.rampDurationMs
           );
-          ramp = t * t * (3 - 2 * t);
+          // Smoother easing function
+          ramp = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
         }
         const step = this.speed * dtSec * ramp;
         const move = Math.min(step, dist);
@@ -898,6 +904,7 @@ export default function LiquidEther({
           magFilter: THREE.LinearFilter,
           wrapS: THREE.ClampToEdgeWrapping,
           wrapT: THREE.ClampToEdgeWrapping,
+          generateMipmaps: false,
         } as const;
         for (const key in this.fbos) {
           this.fbos[key] = new THREE.WebGLRenderTarget(
@@ -1094,6 +1101,7 @@ export default function LiquidEther({
       loop() {
         if (!this.running) return;
         this.render();
+        // Use requestAnimationFrame with fallback for better performance
         rafRef.current = requestAnimationFrame(this._loop);
       }
       start() {
